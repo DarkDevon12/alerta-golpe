@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <title>Denunciar Golpe - AlertaGolpe</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <div class="container">
+
+    <header class="header">
+      <h1>🚨 Denunciar Golpe</h1>
+      <p>Ajude outras pessoas relatando o ocorrido</p>
+    </header>
+
+    <main class="main">
+      <form id="form-denuncia">
+
+        <input type="text" id="telefone" placeholder="Telefone (opcional)">
+
+        <input type="text" id="link" placeholder="Link suspeito (opcional)">
+
+        <textarea id="descricao" placeholder="Descreva o ocorrido (obrigatório)" required></textarea>
+
+        <button type="submit" class="btn-danger">Enviar denúncia</button>
+
+      </form>
+    </main>
+
+    <footer class="footer">
+      <a href="index.html">⬅ Voltar</a>
+    </footer>
+
+  </div>
+
+  <script type="module" src="js/denuncia.js"></script>
+
+</body>
+</html>

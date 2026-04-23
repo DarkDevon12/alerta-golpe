@@ -1,0 +1,275 @@
+@import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=DM+Sans:wght@400;500&display=swap');
+
+/* ── VARIÁVEIS ─────────────────────────────────────────── */
+:root {
+  --bg:         #0a0f1e;
+  --surface:    #111827;
+  --surface2:   #1e293b;
+  --border:     #ffffff10;
+
+  --green:      #22c55e;
+  --green-dark: #16a34a;
+  --red:        #ef4444;
+  --red-dark:   #dc2626;
+  --blue:       #38bdf8;
+  --yellow:     #eab308;
+
+  --text:       #f1f5f9;
+  --muted:      #94a3b8;
+
+  --radius:     10px;
+  --gap:        12px;
+  --transition: 0.2s ease;
+}
+
+/* ── RESET ─────────────────────────────────────────────── */
+*, *::before, *::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* ── BASE ───────────────────────────────────────────────── */
+body {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: var(--bg);
+
+  /* gradiente sutil para dar profundidade */
+  background-image: radial-gradient(ellipse at 20% 20%, #1e3a5f33 0%, transparent 60%),
+                    radial-gradient(ellipse at 80% 80%, #14532d22 0%, transparent 60%);
+
+  color: var(--text);
+  font-family: 'DM Sans', sans-serif;
+  font-size: 15px;
+  line-height: 1.6;
+  padding: 20px;
+}
+
+/* ── CONTAINER ──────────────────────────────────────────── */
+.container {
+  width: 100%;
+  /* clamp(min, ideal, max) — responsivo sem media query */
+  max-width: clamp(320px, 90vw, 520px);
+  min-height: min(100vh, 700px);
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: calc(var(--gap) * 2);
+
+  padding: clamp(16px, 4vw, 28px);
+
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) * 1.5);
+  box-shadow: 0 25px 60px #00000060;
+}
+
+/* ── HEADER ─────────────────────────────────────────────── */
+.header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  text-align: center;
+  padding-bottom: var(--gap);
+  border-bottom: 1px solid var(--border);
+}
+
+.header h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(22px, 5vw, 28px);
+  letter-spacing: -0.5px;
+}
+
+.header p {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+/* ── MAIN ───────────────────────────────────────────────── */
+.main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* ── SEARCH BOX ─────────────────────────────────────────── */
+.search-box {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+.search-box input {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 15px;
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+.search-box input:focus {
+  border-color: var(--blue);
+}
+
+.search-box input::placeholder {
+  color: var(--muted);
+}
+
+/* ── BOTÕES ─────────────────────────────────────────────── */
+button {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 15px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: background var(--transition), transform var(--transition);
+}
+
+button:active {
+  transform: scale(0.98);
+}
+
+.btn-primary {
+  background: var(--green);
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: var(--green-dark);
+}
+
+.btn-danger {
+  background: var(--red);
+  color: #fff;
+}
+
+.btn-danger:hover {
+  background: var(--red-dark);
+}
+
+/* ── FOOTER ─────────────────────────────────────────────── */
+.footer {
+  display: flex;
+  justify-content: center;
+  padding-top: var(--gap);
+  border-top: 1px solid var(--border);
+}
+
+.footer a {
+  color: var(--blue);
+  text-decoration: none;
+  font-size: 14px;
+  transition: opacity var(--transition);
+}
+
+.footer a:hover {
+  opacity: 0.7;
+}
+
+/* ── RESULT BOX ─────────────────────────────────────────── */
+.result-box {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  text-align: center;
+}
+
+.result-box h2 {
+  font-family: 'Syne', sans-serif;
+  font-size: clamp(18px, 4vw, 22px);
+  word-break: break-all; /* links longos não quebram o layout */
+}
+
+/* ── RISCO ──────────────────────────────────────────────── */
+.risco {
+  padding: 12px;
+  border-radius: var(--radius);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: 0.3px;
+}
+
+.risco.baixo  { background: #14532d; color: var(--green); }
+.risco.medio  { background: #713f12; color: var(--yellow); }
+.risco.alto   { background: #7f1d1d; color: var(--red);   }
+
+/* ── RELATOS ────────────────────────────────────────────── */
+.relatos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  text-align: left;
+  max-height: 300px;
+  overflow-y: auto;          /* scroll se tiver muitos relatos */
+  padding-right: 4px;
+}
+
+.relatos h3 {
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.relato {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  padding: 12px;
+  border-radius: var(--radius);
+  font-size: 14px;
+  color: var(--text);
+}
+
+/* ── FORMULÁRIO ─────────────────────────────────────────── */
+#form-denuncia {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+}
+
+#form-denuncia input,
+#form-denuncia textarea {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 15px;
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  transition: border-color var(--transition);
+}
+
+#form-denuncia input:focus,
+#form-denuncia textarea:focus {
+  border-color: var(--blue);
+}
+
+#form-denuncia input::placeholder,
+#form-denuncia textarea::placeholder {
+  color: var(--muted);
+}
+
+#form-denuncia textarea {
+  min-height: 110px;
+  resize: vertical;
+}
