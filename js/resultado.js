@@ -1,15 +1,42 @@
 import { db, collection, getDocs } from "./firebase.js";
 
-function normalizar(texto) {
+// Normaliza links removendo protocolo, www, barra final
+function normalizarLink(texto) {
   if (!texto) return "";
-  if (texto.includes(".") || texto.includes("/")) {
-    return texto.toLowerCase().trim();
-  }
-  return texto.replace(/\D/g, "");
+  
+  return texto
+    .toLowerCase()
+    .trim()
+    .replace(/^https?:\/\//, "")      // remove http:// ou https://
+    .replace(/^www\./, "")             // remove www.
+    .replace(/\/$/, "");               // remove barra final
+}
+
+// Normaliza telefone deixando só números
+function normalizarTelefone(texto) {
+  if (!texto) return "";
+  return texto.replace(/\D/g, "");     // remove tudo que não é número
+}
+
+// Verifica se dois telefones batem (considera com/sem DDD)
+function telefonesBatem(tel1, tel2) {
+  const norm1 = normalizarTelefone(tel1);
+  const norm2 = normalizarTelefone(tel2);
+  
+  if (!norm1 || !norm2) return false;
+  
+  // Comparação exata
+  if (norm1 === norm2) return true;
+  
+  // Pega últimos 8 ou 9 dígitos (número sem DDD)
+  const ultimos1 = norm1.slice(-9);
+  const ultimos2 = norm2.slice(-9);
+  
+  // Se um termina com o outro, considera match
+  return norm1.endsWith(ultimos2) || norm2.endsWith(ultimos1);
 }
 
 async function carregarResultados() {
-  // lê o valor direto da URL
   const params = new URLSearchParams(window.location.search);
   const valorBuscado = params.get("busca");
 
@@ -20,15 +47,26 @@ async function carregarResultados() {
 
   document.getElementById("numero").textContent = valorBuscado;
 
-  // busca TODOS os documentos da coleção "denuncias" no Firestore
   const snapshot = await getDocs(collection(db, "denuncias"));
   const todas = snapshot.docs.map(doc => doc.data());
 
-  // filtra os que batem com o valor buscado
-  const filtradas = todas.filter(d =>
-    (d.telefone && normalizar(d.telefone) === normalizar(valorBuscado)) ||
-    (d.link && normalizar(d.link) === normalizar(valorBuscado))
-  );
+  // Detecta se é link ou telefone
+  const ehLink = valorBuscado.includes(".") || valorBuscado.includes("/");
+
+  let filtradas;
+
+  if (ehLink) {
+    // Busca por link normalizado
+    const linkNormalizado = normalizarLink(valorBuscado);
+    filtradas = todas.filter(d => 
+      d.link && normalizarLink(d.link) === linkNormalizado
+    );
+  } else {
+    // Busca por telefone com comparação flexível
+    filtradas = todas.filter(d => 
+      d.telefone && telefonesBatem(d.telefone, valorBuscado)
+    );
+  }
 
   const qtd = filtradas.length;
   document.getElementById("denuncias").textContent = `${qtd} denúncia(s) registrada(s)`;

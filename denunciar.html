@@ -18,9 +18,23 @@
     <main class="main">
       <form id="form-denuncia">
 
-        <input type="text" id="telefone" placeholder="Telefone (opcional)">
+        <!-- Select para escolher o tipo -->
+        <label for="tipo-denuncia">O que você quer denunciar?</label>
+        <select id="tipo-denuncia" required>
+          <option value="">Selecione uma opção</option>
+          <option value="telefone">📱 Número de telefone</option>
+          <option value="link">🔗 Link suspeito</option>
+        </select>
 
-        <input type="text" id="link" placeholder="Link suspeito (opcional)">
+        <!-- Input de telefone (inicialmente escondido) -->
+        <div id="campo-telefone" class="campo-condicional" style="display: none;">
+          <input type="tel" id="telefone" placeholder="Ex: (11) 99999-8888">
+        </div>
+
+        <!-- Input de link (inicialmente escondido) -->
+        <div id="campo-link" class="campo-condicional" style="display: none;">
+          <input type="text" id="link" placeholder="Ex: https://site-suspeito.com">
+        </div>
 
         <textarea id="descricao" placeholder="Descreva o ocorrido (obrigatório)" required></textarea>
 

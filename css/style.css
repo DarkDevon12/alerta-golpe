@@ -273,3 +273,52 @@ button:active {
   min-height: 110px;
   resize: vertical;
 }
+
+/* ── SELECT ─────────────────────────────────────────────── */
+select {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 15px;
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  cursor: pointer;
+  transition: border-color var(--transition);
+}
+
+select:focus {
+  border-color: var(--blue);
+}
+
+select option {
+  background: var(--surface);
+  color: var(--text);
+}
+
+/* ── LABEL ──────────────────────────────────────────────── */
+label {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: -4px;
+}
+
+/* ── CAMPO CONDICIONAL ──────────────────────────────────── */
+.campo-condicional {
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
