@@ -322,3 +322,448 @@ label {
     transform: translateY(0);
   }
 }
+
+/* ── BOTÃO SECUNDÁRIO ────────────────────────────────────── */
+.btn-secondary {
+  background: var(--surface2);
+  color: var(--blue);
+  border: 1px solid var(--blue);
+}
+
+.btn-secondary:hover {
+  background: var(--blue);
+  color: var(--text);
+}
+
+/* ── BOTÃO SAIR ──────────────────────────────────────────── */
+.btn-sair {
+  padding: 8px 14px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transition);
+}
+
+.btn-sair:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+/* ── HEADER TOP (com botão sair) ─────────────────────────── */
+.header-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  gap: var(--gap);
+}
+
+/* ── DIVIDER ─────────────────────────────────────────────── */
+.divider {
+  text-align: center;
+  color: var(--muted);
+  font-size: 13px;
+  margin: var(--gap) 0;
+  position: relative;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: 35%;
+  height: 1px;
+  background: var(--border);
+}
+
+.divider::before {
+  left: 0;
+}
+
+.divider::after {
+  right: 0;
+}
+
+/* ── REQUISITOS DE SENHA ─────────────────────────────────── */
+.requisitos-senha {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  font-size: 13px;
+  margin: var(--gap) 0;
+}
+
+.requisitos-senha p {
+  color: var(--muted);
+  margin-bottom: 8px;
+  font-weight: 600;
+}
+
+.requisitos-senha ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.requisitos-senha li {
+  color: var(--muted);
+  transition: color var(--transition);
+}
+
+.requisitos-senha li.ok {
+  color: var(--green);
+}
+
+/* ── BOTÃO DESABILITADO ──────────────────────────────────── */
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+button:disabled:hover {
+  transform: none;
+}
+
+/* ── SEPARADOR NO FOOTER ─────────────────────────────────── */
+.footer a {
+  display: inline;
+}
+
+.separator {
+  color: var(--muted);
+  margin: 0 8px;
+}
+
+/* ── PÁGINA DE AUTENTICAÇÃO ─────────────────────────────── */
+body.auth-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(135deg, #0a0f1e 0%, #0f172a 50%, #111827 100%);
+  padding: 20px;
+}
+
+.auth-container {
+  width: 100%;
+  max-width: 420px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 40px;
+  min-height: 100vh;
+}
+
+/* ── AUTH BOX ────────────────────────────────────────────── */
+.auth-box {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 48px 32px;
+  box-shadow: 0 25px 60px #00000080;
+  animation: slideUp 0.4s ease;
+}
+
+.auth-box-wide {
+  max-width: 420px;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ── AUTH HEADER ─────────────────────────────────────────── */
+.auth-header {
+  text-align: center;
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+.auth-header h1 {
+  font-family: 'Syne', sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 8px;
+  letter-spacing: -0.5px;
+}
+
+.auth-header p {
+  font-size: 13px;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+/* ── AUTH FORM ────────────────────────────────────────────── */
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  margin-bottom: 24px;
+}
+
+/* ── FORM GROUP ──────────────────────────────────────────── */
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--surface2);
+  color: var(--text);
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  outline: none;
+  transition: border-color var(--transition), background var(--transition);
+}
+
+.form-group input:focus {
+  border-color: var(--blue);
+  background: #1e293b80;
+}
+
+.form-group input::placeholder {
+  color: var(--muted);
+}
+
+/* ── REQUISITOS DE SENHA ─────────────────────────────────── */
+.requisitos-senha {
+  background: #11182710;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px 0;
+}
+
+.requisitos-senha p {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 10px;
+}
+
+.requisitos-senha ul {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.req-item {
+  font-size: 12px;
+  color: var(--muted);
+  transition: color var(--transition);
+  padding-left: 16px;
+  position: relative;
+}
+
+.req-item::before {
+  content: "○";
+  position: absolute;
+  left: 0;
+  color: var(--muted);
+  transition: color var(--transition);
+}
+
+.req-item.ok {
+  color: var(--green);
+}
+
+.req-item.ok::before {
+  content: "✓";
+  color: var(--green);
+  font-weight: bold;
+}
+
+/* ── BOTÕES DE AUTENTICAÇÃO ──────────────────────────────── */
+.btn-auth {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 8px;
+  border: none;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: all var(--transition);
+  text-decoration: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+/* Botão primário (Entrar / Criar conta) */
+.btn-auth.btn-primary {
+  background: var(--green);
+  color: #fff;
+}
+
+.btn-auth.btn-primary:hover:not(:disabled) {
+  background: var(--green-dark);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px #22c55e40;
+}
+
+.btn-auth.btn-primary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Botão secundário (Criar conta / Voltar) */
+.btn-auth.btn-secondary {
+  background: transparent;
+  color: var(--blue);
+  border: 1.5px solid var(--blue);
+}
+
+.btn-auth.btn-secondary:hover:not(:disabled) {
+  background: var(--blue);
+  color: #fff;
+  transform: translateY(-2px);
+}
+
+.btn-auth.btn-secondary:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Botão desabilitado */
+.btn-auth:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-auth:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* ── DIVIDER ─────────────────────────────────────────────── */
+.auth-divider {
+  text-align: center;
+  margin: 16px 0;
+  position: relative;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  width: calc(50% - 60px);
+  height: 1px;
+  background: var(--border);
+}
+
+.auth-divider::before {
+  left: 0;
+}
+
+.auth-divider::after {
+  right: 0;
+}
+
+.auth-divider span {
+  display: inline-block;
+  padding: 0 16px;
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--surface);
+  position: relative;
+  z-index: 1;
+}
+
+/* ── AUTH FOOTER ─────────────────────────────────────────── */
+.auth-footer {
+  text-align: center;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+.auth-footer p {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* ── RESPONSIVIDADE ──────────────────────────────────────── */
+@media (max-width: 480px) {
+  .auth-box {
+    padding: 32px 20px;
+  }
+
+  .auth-header h1 {
+    font-size: 24px;
+  }
+
+  .form-group {
+    gap: 6px;
+  }
+
+  .auth-form {
+    gap: 16px;
+  }
+}
+
+/* ── BOTÃO GOOGLE ────────────────────────────────────────── */
+.btn-google {
+  background: #fff;
+  color: #1f2937;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 600;
+  margin-bottom: 16px;
+}
+
+.btn-google:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  box-shadow: 0 4px 12px #00000015;
+  transform: translateY(-2px);
+}
+
+.btn-google:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.google-icon {
+  width: 18px;
+  height: 18px;
+}

@@ -4,8 +4,23 @@ import {
   getFirestore, 
   collection, 
   addDoc, 
-  getDocs 
+  getDocs,
+  query,
+  where,
+  doc,
+  getDoc,
+  setDoc
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup
+} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyA7Un6TVn5sp5mHnuFHP_W5M_JUHsz8WVI",
@@ -18,5 +33,25 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
+const googleProvider = new GoogleAuthProvider();
 
-export { db, collection, addDoc, getDocs };
+export { 
+  db, 
+  auth,
+  collection, 
+  addDoc, 
+  getDocs,
+  query,
+  where,
+  doc,
+  getDoc,
+  setDoc,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  GoogleAuthProvider,
+  signInWithPopup,
+  googleProvider
+};

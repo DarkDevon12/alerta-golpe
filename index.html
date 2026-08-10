@@ -11,7 +11,10 @@
   <div class="container">
 
     <header class="header">
-      <h1>🔐 AlertaGolpe</h1>
+      <div class="header-top">
+        <h1>🔐 AlertaGolpe</h1>
+        <button id="btn-sair" class="btn-sair">Sair</button>
+      </div>
       <p>Verifique se um número ou link é suspeito</p>
     </header>
 
@@ -24,9 +27,29 @@
 
     <footer class="footer">
       <a href="denunciar.html">🚨 Fazer uma denúncia</a>
+      <span class="separator">•</span>
+      <a href="ranking.html">👑 Ranking Mundial</a>
     </footer>
 
   </div>
+
+  <script type="module">
+    import { protegerRota } from "./js/route-guard.js";
+    import { auth, signOut } from "./js/firebase.js";
+    
+    // Protege a rota - redireciona para login se não estiver autenticado
+    protegerRota();
+
+    // Botão sair
+    document.getElementById("btn-sair").addEventListener("click", async () => {
+      try {
+        await signOut(auth);
+        window.location.href = "login.html";
+      } catch (error) {
+        alert("Erro ao sair: " + error.message);
+      }
+    });
+  </script>
 
   <script type="module" src="js/main.js"></script>
 
