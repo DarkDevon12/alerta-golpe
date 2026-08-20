@@ -36,11 +36,8 @@ body {
   justify-content: center;
   align-items: center;
   background-color: var(--bg);
-
-  /* gradiente sutil para dar profundidade */
   background-image: radial-gradient(ellipse at 20% 20%, #1e3a5f33 0%, transparent 60%),
                     radial-gradient(ellipse at 80% 80%, #14532d22 0%, transparent 60%);
-
   color: var(--text);
   font-family: 'DM Sans', sans-serif;
   font-size: 15px;
@@ -51,17 +48,13 @@ body {
 /* ── CONTAINER ──────────────────────────────────────────── */
 .container {
   width: 100%;
-  /* clamp(min, ideal, max) — responsivo sem media query */
   max-width: clamp(320px, 90vw, 520px);
   min-height: min(100vh, 700px);
-
   display: flex;
   flex-direction: column;
   justify-content: space-between;
   gap: calc(var(--gap) * 2);
-
   padding: clamp(16px, 4vw, 28px);
-
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: calc(var(--radius) * 1.5);
@@ -166,19 +159,55 @@ button:active {
 .footer {
   display: flex;
   justify-content: center;
+  align-items: center;
+  gap: 0;
   padding-top: var(--gap);
+  padding-bottom: var(--gap);
   border-top: 1px solid var(--border);
+  flex-wrap: wrap;
 }
 
 .footer a {
-  color: var(--blue);
+  color: var(--text);
   text-decoration: none;
-  font-size: 14px;
-  transition: opacity var(--transition);
+  font-size: 13px;
+  font-weight: 500;
+  padding: 0 12px;
+  transition: color var(--transition);
 }
 
 .footer a:hover {
-  opacity: 0.7;
+  color: var(--green);
+}
+
+.separator {
+  color: var(--border);
+  font-size: 12px;
+}
+
+/* ── BOTÃO SAIR NO FOOTER ────────────────────────────────── */
+.btn-sair {
+  width: auto;
+  padding: 8px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'DM Sans', sans-serif;
+  cursor: pointer;
+  transition: all var(--transition);
+  margin-left: auto;
+}
+
+.btn-sair:hover {
+  border-color: var(--red);
+  color: var(--red);
+}
+
+.btn-sair:active {
+  transform: scale(0.95);
 }
 
 /* ── RESULT BOX ─────────────────────────────────────────── */
@@ -193,7 +222,7 @@ button:active {
 .result-box h2 {
   font-family: 'Syne', sans-serif;
   font-size: clamp(18px, 4vw, 22px);
-  word-break: break-all; /* links longos não quebram o layout */
+  word-break: break-all;
 }
 
 /* ── RISCO ──────────────────────────────────────────────── */
@@ -207,7 +236,7 @@ button:active {
 
 .risco.baixo  { background: #14532d; color: var(--green); }
 .risco.medio  { background: #713f12; color: var(--yellow); }
-.risco.alto   { background: #7f1d1d; color: var(--red);   }
+.risco.alto   { background: #7f1d1d; color: var(--red); }
 
 /* ── RELATOS ────────────────────────────────────────────── */
 .relatos {
@@ -216,7 +245,7 @@ button:active {
   gap: var(--gap);
   text-align: left;
   max-height: 300px;
-  overflow-y: auto;          /* scroll se tiver muitos relatos */
+  overflow-y: auto;
   padding-right: 4px;
 }
 
@@ -246,7 +275,8 @@ button:active {
 }
 
 #form-denuncia input,
-#form-denuncia textarea {
+#form-denuncia textarea,
+select {
   width: 100%;
   padding: 14px 16px;
   border-radius: var(--radius);
@@ -260,7 +290,8 @@ button:active {
 }
 
 #form-denuncia input:focus,
-#form-denuncia textarea:focus {
+#form-denuncia textarea:focus,
+select:focus {
   border-color: var(--blue);
 }
 
@@ -274,23 +305,8 @@ button:active {
   resize: vertical;
 }
 
-/* ── SELECT ─────────────────────────────────────────────── */
 select {
-  width: 100%;
-  padding: 14px 16px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: var(--surface2);
-  color: var(--text);
-  font-size: 15px;
-  font-family: 'DM Sans', sans-serif;
-  outline: none;
   cursor: pointer;
-  transition: border-color var(--transition);
-}
-
-select:focus {
-  border-color: var(--blue);
 }
 
 select option {
@@ -301,10 +317,12 @@ select option {
 /* ── LABEL ──────────────────────────────────────────────── */
 label {
   display: block;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
-  color: var(--muted);
-  margin-bottom: -4px;
+  color: var(--text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
 }
 
 /* ── CAMPO CONDICIONAL ──────────────────────────────────── */
@@ -323,123 +341,9 @@ label {
   }
 }
 
-/* ── BOTÃO SECUNDÁRIO ────────────────────────────────────── */
-.btn-secondary {
-  background: var(--surface2);
-  color: var(--blue);
-  border: 1px solid var(--blue);
-}
-
-.btn-secondary:hover {
-  background: var(--blue);
-  color: var(--text);
-}
-
-/* ── BOTÃO SAIR ──────────────────────────────────────────── */
-.btn-sair {
-  padding: 8px 14px;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--muted);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition);
-}
-
-.btn-sair:hover {
-  border-color: var(--red);
-  color: var(--red);
-}
-
-/* ── HEADER TOP (com botão sair) ─────────────────────────── */
-.header-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  gap: var(--gap);
-}
-
-/* ── DIVIDER ─────────────────────────────────────────────── */
-.divider {
-  text-align: center;
-  color: var(--muted);
-  font-size: 13px;
-  margin: var(--gap) 0;
-  position: relative;
-}
-
-.divider::before,
-.divider::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  width: 35%;
-  height: 1px;
-  background: var(--border);
-}
-
-.divider::before {
-  left: 0;
-}
-
-.divider::after {
-  right: 0;
-}
-
-/* ── REQUISITOS DE SENHA ─────────────────────────────────── */
-.requisitos-senha {
-  background: var(--surface2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 12px;
-  font-size: 13px;
-  margin: var(--gap) 0;
-}
-
-.requisitos-senha p {
-  color: var(--muted);
-  margin-bottom: 8px;
-  font-weight: 600;
-}
-
-.requisitos-senha ul {
-  list-style: none;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.requisitos-senha li {
-  color: var(--muted);
-  transition: color var(--transition);
-}
-
-.requisitos-senha li.ok {
-  color: var(--green);
-}
-
-/* ── BOTÃO DESABILITADO ──────────────────────────────────── */
-button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-button:disabled:hover {
-  transform: none;
-}
-
-/* ── SEPARADOR NO FOOTER ─────────────────────────────────── */
-.footer a {
-  display: inline;
-}
-
-.separator {
-  color: var(--muted);
-  margin: 0 8px;
-}
+/* ═══════════════════════════════════════════════════════ */
+/* ────────── AUTENTICAÇÃO (Login/Cadastro) ─────────────── */
+/* ═══════════════════════════════════════════════════════ */
 
 /* ── PÁGINA DE AUTENTICAÇÃO ─────────────────────────────── */
 body.auth-page {
@@ -525,15 +429,6 @@ body.auth-page {
   display: flex;
   flex-direction: column;
   gap: 8px;
-}
-
-.form-group label {
-  display: block;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .form-group input {
@@ -627,7 +522,7 @@ body.auth-page {
   text-align: center;
 }
 
-/* Botão primário (Entrar / Criar conta) */
+/* Botão primário */
 .btn-auth.btn-primary {
   background: var(--green);
   color: #fff;
@@ -643,7 +538,7 @@ body.auth-page {
   transform: translateY(0);
 }
 
-/* Botão secundário (Criar conta / Voltar) */
+/* Botão secundário */
 .btn-auth.btn-secondary {
   background: transparent;
   color: var(--blue);
@@ -671,7 +566,7 @@ body.auth-page {
   box-shadow: none;
 }
 
-/* ── DIVIDER ─────────────────────────────────────────────── */
+/* ── DIVIDER DE AUTENTICAÇÃO ────────────────────────────── */
 .auth-divider {
   text-align: center;
   margin: 16px 0;
@@ -720,6 +615,36 @@ body.auth-page {
   color: var(--muted);
 }
 
+/* ── BOTÃO GOOGLE ────────────────────────────────────────── */
+.btn-google {
+  background: #fff;
+  color: #1f2937;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  width: 100%;
+}
+
+.btn-google:hover:not(:disabled) {
+  background: #f9fafb;
+  border-color: #d1d5db;
+  box-shadow: 0 4px 12px #00000015;
+  transform: translateY(-2px);
+}
+
+.btn-google:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.google-icon {
+  width: 18px;
+  height: 18px;
+}
+
 /* ── RESPONSIVIDADE ──────────────────────────────────────── */
 @media (max-width: 480px) {
   .auth-box {
@@ -737,33 +662,18 @@ body.auth-page {
   .auth-form {
     gap: 16px;
   }
-}
 
-/* ── BOTÃO GOOGLE ────────────────────────────────────────── */
-.btn-google {
-  background: #fff;
-  color: #1f2937;
-  border: 1px solid #e5e7eb;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  font-weight: 600;
-  margin-bottom: 16px;
-}
+  .footer {
+    flex-direction: column;
+    gap: 12px;
+  }
 
-.btn-google:hover:not(:disabled) {
-  background: #f9fafb;
-  border-color: #d1d5db;
-  box-shadow: 0 4px 12px #00000015;
-  transform: translateY(-2px);
-}
+  .btn-sair {
+    margin-left: 0;
+    width: 100%;
+  }
 
-.btn-google:active:not(:disabled) {
-  transform: translateY(0);
-}
-
-.google-icon {
-  width: 18px;
-  height: 18px;
+  .separator {
+    display: none;
+  }
 }
