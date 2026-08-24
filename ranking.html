@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/style.css">
+    <title>Document</title>
+</head>
+
+<body>
+    <div class="container">
+
+        <header class="header">
+            <h1>Ranking Global</h1>
+            <p>Top 100 pessoas com mais denuncias Mundial</p>
+        </header>
+
+        <main class="table-ranking">
+            <table class="ranking-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Nome</th>
+                        <th>XP</th>
+                        <th>Denúncias</th>
+                    </tr>
+                </thead>
+
+                <tbody id="ranking-body">
+                    <!-- Os dados do Firebase aparecerão aqui -->
+                </tbody>
+            </table>
+        </main>
+
+        <footer class="footer">
+            <a href="denunciar.html">Reportar golpe</a>
+            <span class="separator">•</span>
+            <a href="ranking.html">Ranking</a>
+            <button id="btn-sair" class="btn-sair">Sair</button>
+        </footer>
+
+        <script type="module" src="js/ranking.js"></script>
+</body>
+
+</html>

@@ -677,3 +677,144 @@ body.auth-page {
     display: none;
   }
 }
+
+/* =========================
+   RANKING DE XP
+========================= */
+
+.table-ranking {
+    width: 100%;
+    max-width: 900px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.ranking-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0 10px;
+    font-family: Arial, sans-serif;
+}
+
+/* Cabeçalho */
+.ranking-table thead th {
+    padding: 15px 20px;
+    text-align: left;
+    font-size: 14px;
+    font-weight: 700;
+    color: #777;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Linhas */
+.ranking-table tbody tr {
+    background: #ffffff;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
+    transition: 0.2s ease;
+}
+
+/* Efeito ao passar o mouse */
+.ranking-table tbody tr:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.10);
+}
+
+/* Células */
+.ranking-table tbody td {
+    padding: 18px 20px;
+    color: #333;
+    font-size: 15px;
+    border-top: 1px solid #f0f0f0;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+/* Bordas arredondadas */
+.ranking-table tbody td:first-child {
+    border-left: 1px solid #f0f0f0;
+    border-radius: 12px 0 0 12px;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.ranking-table tbody td:last-child {
+    border-right: 1px solid #f0f0f0;
+    border-radius: 0 12px 12px 0;
+}
+
+/* Nome */
+.ranking-table tbody td:nth-child(2) {
+    font-weight: 600;
+}
+
+/* XP */
+.ranking-table tbody td:nth-child(3) {
+    font-weight: 700;
+    color: #6c5ce7;
+}
+
+/* Quantidade de denúncias */
+.ranking-table tbody td:nth-child(4) {
+    font-weight: 600;
+    color: #555;
+}
+
+/* =========================
+   TOP 3
+========================= */
+
+/* 1º lugar */
+.ranking-table tbody tr:nth-child(1) {
+    background: linear-gradient(
+        90deg,
+        #fff9df,
+        #ffffff
+    );
+}
+
+/* 2º lugar */
+.ranking-table tbody tr:nth-child(2) {
+    background: linear-gradient(
+        90deg,
+        #f4f4f4,
+        #ffffff
+    );
+}
+
+/* 3º lugar */
+.ranking-table tbody tr:nth-child(3) {
+    background: linear-gradient(
+        90deg,
+        #fff1e6,
+        #ffffff
+    );
+}
+
+/* =========================
+   RESPONSIVO
+========================= */
+
+@media (max-width: 600px) {
+
+    .table-ranking {
+        padding: 0 10px;
+        margin: 25px auto;
+    }
+
+    .ranking-table thead th,
+    .ranking-table tbody td {
+        padding: 13px 10px;
+    }
+
+    .ranking-table thead th {
+        font-size: 11px;
+    }
+
+    .ranking-table tbody td {
+        font-size: 13px;
+    }
+
+    .ranking-table tbody td:first-child {
+        font-size: 17px;
+    }
+}
