@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Denunciar Golpe - AlertaGolpe</title>
+  <script type="module" crossorigin src="/assets/denunciar-BdSqZ7rU.js"></script>
+  <link rel="modulepreload" crossorigin href="/assets/firebase-DYKGnidX.js">
+  <link rel="stylesheet" crossorigin href="/assets/firebase-B4t23L_P.css">
+</head>
+<body>
+
+  <div class="container">
+
+    <header class="header">
+      <h1>🚨 Denunciar Golpe</h1>
+      <p>Ajude outras pessoas relatando o ocorrido</p>
+    </header>
+
+    <main class="main">
+      <form id="form-denuncia">
+
+        <!-- Select para escolher o tipo -->
+        <label for="tipo-denuncia">O que você quer denunciar?</label>
+        <select id="tipo-denuncia" required>
+          <option value="">Selecione uma opção</option>
+          <option value="telefone">📱 Número de telefone</option>
+          <option value="link">🔗 Link suspeito</option>
+        </select>
+
+        <!-- Input de telefone (inicialmente escondido) -->
+        <div id="campo-telefone" class="campo-condicional" style="display: none;">
+          <input type="tel" id="telefone" placeholder="Ex: (11) 99999-8888">
+        </div>
+
+        <!-- Input de link (inicialmente escondido) -->
+        <div id="campo-link" class="campo-condicional" style="display: none;">
+          <input type="text" id="link" placeholder="Ex: https://site-suspeito.com">
+        </div>
+
+        <textarea id="descricao" placeholder="Descreva o ocorrido (obrigatório)" required></textarea>
+
+        <button type="submit" class="btn-danger">Enviar denúncia</button>
+
+      </form>
+    </main>
+
+    <footer class="footer">
+      <a href="index.html">⬅ Voltar</a>
+    </footer>
+
+  </div>
+
+
+</body>
+</html>
