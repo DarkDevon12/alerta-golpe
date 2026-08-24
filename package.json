@@ -1,0 +1,29 @@
+{
+  "name": "alerta-golpe",
+  "version": "1.0.0",
+  "description": "> Plataforma de consulta e denúncia de golpes digitais — Trabalho de Conclusão de Curso (TCC)  \r > Curso de Sistemas de Informação",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DarkDevon12/alerta-golpe.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/DarkDevon12/alerta-golpe/issues"
+  },
+  "homepage": "https://github.com/DarkDevon12/alerta-golpe#readme",
+  "dependencies": {
+    "firebase": "^12.18.0"
+  },
+  "devDependencies": {
+    "vite": "^8.2.2"
+  }
+}

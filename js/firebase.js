@@ -1,9 +1,9 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import { initializeApp } from "firebase/app";
 
-import { 
-  getFirestore, 
-  collection, 
-  addDoc, 
+import {
+  getFirestore,
+  collection,
+  addDoc,
   getDocs,
   query,
   where,
@@ -12,7 +12,7 @@ import {
   setDoc,
   updateDoc,
   increment
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+} from "firebase/firestore";
 
 import {
   getAuth,
@@ -22,30 +22,34 @@ import {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup
-} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+} from "firebase/auth";
+
 
 const firebaseConfig = {
-  apiKey: "AIzaSyA7Un6TVn5sp5mHnuFHP_W5M_JUHsz8WVI",
-  authDomain: "alerta-golpe-a2fbc.firebaseapp.com",
-  projectId: "alerta-golpe-a2fbc",
-  storageBucket: "alerta-golpe-a2fbc.firebasestorage.app",
-  messagingSenderId: "71242858588",
-  appId: "1:71242858588:web:f9c62bb7d08df7bc20a699"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID
 };
+
 
 const app = initializeApp(firebaseConfig);
 
 const db = getFirestore(app);
+
 const auth = getAuth(app);
 
 const googleProvider = new GoogleAuthProvider();
 
-export { 
-  db, 
+
+export {
+  db,
   auth,
 
-  collection, 
-  addDoc, 
+  collection,
+  addDoc,
   getDocs,
   query,
   where,
