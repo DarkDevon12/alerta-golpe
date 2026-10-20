@@ -24,6 +24,8 @@ O objetivo é criar uma base colaborativa de dados sobre golpes digitais, ajudan
 - 📊 **Nível de risco** calculado automaticamente (baixo, médio ou alto)
 - 📋 **Relatos reais** de outras vítimas exibidos na tela
 - 🚨 **Registro de denúncias** com telefone, link e descrição
+- 🤖 **Análise de risco com IA** (Google Gemini) antes de enviar
+- 🏆 **Ranking de XP** com níveis
 - ☁️ **Banco de dados online** via Firebase Firestore
 
 ---
@@ -57,17 +59,23 @@ O usuário pode registrar uma denúncia informando telefone e/ou link suspeito e
 alerta-golpe/
 │
 ├── index.html          # Tela inicial com busca
-├── resultado.html      # Exibe resultado da consulta
-├── denunciar.html      # Formulário de denúncia
+├── resultado.html      # Resultado da consulta + relatos
+├── denunciar.html      # Formulário de denúncia + análise com IA
+├── ranking.html        # Ranking de XP
+├── login.html / cadastro.html
 │
-├── css/
-│   └── style.css       # Estilos globais (Flexbox, responsivo)
+├── css/style.css       # Estilos globais
 │
-└── js/
-    ├── firebase.js     # Configuração e conexão com o Firebase
-    ├── main.js         # Lógica da busca (index)
-    ├── resultado.js    # Lógica da consulta ao Firestore
-    └── denuncia.js     # Lógica do envio de denúncias
+├── js/
+│   ├── firebase.js     # Inicialização do Firebase (config vem do .env)
+│   ├── layout.js       # Proteção de rota + botão Sair (páginas logadas)
+│   ├── usuarios.js     # Perfil privado (usuarios) e público (ranking)
+│   ├── denuncia.js     # Envio da denúncia, XP e chamada à análise
+│   └── ...             # Um script por página
+│
+├── server/analisar.js  # Chamada ao Gemini (roda só no servidor)
+├── api/analisar.js     # Mesma rota como função serverless (Vercel)
+└── firestore.rules     # Regras de segurança do Firestore
 ```
 
 ---
@@ -76,10 +84,11 @@ alerta-golpe/
 
 | Tecnologia | Uso |
 |------------|-----|
-| HTML5 | Estrutura das páginas |
-| CSS3 + Flexbox | Estilização responsiva sem media queries |
-| JavaScript (Vanilla) | Lógica do frontend |
-| Firebase Firestore | Banco de dados em tempo real |
+| HTML5 + CSS3 | Estrutura e estilo das páginas |
+| JavaScript (Vanilla, ES Modules) | Lógica do frontend |
+| Vite | Servidor de desenvolvimento, build e rota `/api/analisar` |
+| Firebase Auth + Firestore | Login e banco de dados |
+| Google Gemini | Análise de risco das denúncias |
 | Google Fonts (Syne + DM Sans) | Tipografia |
 
 ---
@@ -87,45 +96,45 @@ alerta-golpe/
 ## 🚀 Como executar localmente
 
 ### Pré-requisitos
-- [VS Code](https://code.visualstudio.com/)
-- Extensão [Live Server](https://marketplace.visualstudio.com/items?itemName=ritwickdey.LiveServer)
+- [Node.js](https://nodejs.org/) 20 ou superior
 
 ### Passos
 
 ```bash
-# 1. Clone o repositório
-git clone https://github.com/seu-usuario/alerta-golpe.git
+# 1. Instale as dependências
+npm install
 
-# 2. Abra a pasta no VS Code
-cd alerta-golpe
-code .
+# 2. Crie o .env a partir do exemplo e preencha as chaves
+cp .env.example .env
 
-# 3. Clique em "Go Live" no canto inferior direito do VS Code
+# 3. Rode o servidor de desenvolvimento
+npm run dev
 ```
 
-Acesse via:
-```
-http://127.0.0.1:5500
-```
+Acesse o endereço mostrado no terminal (normalmente `http://localhost:5173`).
 
-> ⚠️ **Importante:** o projeto usa `type="module"` nos scripts, por isso **não funciona** abrindo o arquivo diretamente pelo navegador (`file://`). É necessário usar o Live Server ou outro servidor local.
+> ⚠️ **Importante:** não use Live Server nem abra os arquivos direto (`file://`). A config do Firebase vem do `.env` e a análise com IA depende da rota `/api/analisar`, que só existe quando o projeto roda pelo Vite (`npm run dev` ou `npm run preview`).
+
+### Chaves e segurança
+
+- `GEMINI_API_KEY` **não** tem prefixo `VITE_`: fica só no servidor e nunca vai para o navegador. O front chama `/api/analisar`, que confere o login do usuário e só então fala com o Gemini.
+- As variáveis `VITE_FIREBASE_*` vão para o navegador por design (o SDK do Firebase precisa delas). Elas identificam o projeto, não dão acesso; quem protege os dados são as regras em `firestore.rules`.
+
+### Deploy
+
+Na Vercel, o build (`npm run build`) gera o site em `dist/` e a pasta `api/` vira a função `/api/analisar`. Cadastre as mesmas variáveis do `.env` nas configurações do projeto.
 
 ---
 
 ## ☁️ Firebase
 
-O projeto utiliza o **Firebase Firestore** como banco de dados. As denúncias são salvas na coleção `denuncias` com a seguinte estrutura:
+| Coleção | Conteúdo | Quem lê |
+|---------|----------|---------|
+| `usuarios/{uid}` | nome, CPF, email, XP | Só o próprio usuário |
+| `ranking/{uid}` | nome, XP, nº de denúncias | Usuários logados |
+| `denuncias/{id}` | telefone ou link, descrição, data, autor, análise da IA | Usuários logados |
 
-```json
-{
-  "telefone": "11999998888",
-  "link": "",
-  "descricao": "Recebi mensagem pedindo dados bancários",
-  "data": "2024-06-01T14:32:00Z"
-}
-```
-
-A conexão é feita via CDN, sem necessidade de instalar dependências.
+Publique as regras colando `firestore.rules` em **Firebase Console → Firestore Database → Regras**.
 
 ---
 
@@ -134,9 +143,11 @@ A conexão é feita via CDN, sem necessidade de instalar dependências.
 - [ ] Upload de imagens como prova do golpe
 - [ ] Busca parcial (não exata)
 - [ ] Filtros por data
-- [ ] Autenticação de usuários
-- [ ] Sistema de reputação para denúncias
-- [ ] Proteção contra XSS e dados maliciosos
+- [x] Autenticação de usuários
+- [x] Sistema de reputação (XP e ranking)
+- [x] Proteção contra XSS
+- [x] Análise de risco com IA (Gemini)
+- [ ] Calcular o XP no servidor (hoje o cliente soma o XP, limitado pelas regras do Firestore)
 - [ ] Notificações em tempo real com Firebase onSnapshot
 
 ---

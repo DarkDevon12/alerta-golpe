@@ -1,7 +1,8 @@
-import { 
-  auth, 
-  signInWithEmailAndPassword 
+import {
+  auth,
+  signInWithEmailAndPassword
 } from "./firebase.js";
+import { sincronizarRanking } from "./usuarios.js";
 
 async function fazerLogin(event) {
   event.preventDefault();
@@ -15,23 +16,28 @@ async function fazerLogin(event) {
   }
 
   try {
-    const userCredential = await signInWithEmailAndPassword(auth, email, senha);
-    
-    // Login bem-sucedido
-    console.log("Usuário logado:", userCredential.user.uid);
-    
-    // Redireciona para o dashboard
+    const { user } = await signInWithEmailAndPassword(auth, email, senha);
+
+    // Contas criadas antes do ranking público passam a aparecer nele
+    await sincronizarRanking(user.uid).catch((e) => console.warn("Ranking:", e.message));
+
     window.location.href = "index.html";
 
   } catch (error) {
     console.error("Erro ao fazer login:", error.code);
-    
-    if (error.code === "auth/user-not-found") {
-      alert("Email não encontrado. Crie uma conta.");
-    } else if (error.code === "auth/wrong-password") {
-      alert("Senha incorreta.");
+
+    // Desde o Firebase v10 email inexistente e senha errada
+    // retornam o mesmo código (auth/invalid-credential)
+    if (
+      error.code === "auth/invalid-credential" ||
+      error.code === "auth/user-not-found" ||
+      error.code === "auth/wrong-password"
+    ) {
+      alert("Email ou senha incorretos.");
     } else if (error.code === "auth/invalid-email") {
       alert("Email inválido.");
+    } else if (error.code === "auth/too-many-requests") {
+      alert("Muitas tentativas. Aguarde alguns minutos e tente novamente.");
     } else {
       alert("Erro ao fazer login: " + error.message);
     }

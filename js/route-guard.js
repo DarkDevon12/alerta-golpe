@@ -1,32 +1,24 @@
 import { auth, onAuthStateChanged } from "./firebase.js";
 
 /**
- * Verifica se o usuário está autenticado
- * Se não estiver, redireciona para login
- * Deve ser importado nos arquivos que exigem autenticação
+ * Espera o Firebase resolver a sessão e devolve o usuário (ou null).
+ * Cancela o listener depois da primeira resposta.
  */
-export function protegerRota() {
+export function obterUsuarioAtual() {
   return new Promise((resolve) => {
-    onAuthStateChanged(auth, (user) => {
-      if (!user) {
-        // Não está logado, redireciona
-        window.location.href = "login.html";
-        resolve(null);
-      } else {
-        // Está logado, retorna o usuário
-        resolve(user);
-      }
+    const cancelar = onAuthStateChanged(auth, (user) => {
+      cancelar();
+      resolve(user);
     });
   });
 }
 
 /**
- * Retorna o usuário logado atualmente
+ * Exige login: se não houver usuário, redireciona para login.html.
+ * @returns {Promise<import("firebase/auth").User | null>}
  */
-export function obterUsuarioAtual() {
-  return new Promise((resolve) => {
-    onAuthStateChanged(auth, (user) => {
-      resolve(user);
-    });
-  });
+export async function protegerRota() {
+  const user = await obterUsuarioAtual();
+  if (!user) window.location.replace("login.html");
+  return user;
 }

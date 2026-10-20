@@ -1,0 +1,49 @@
+// Regras do Firestore do AlertaGolpe.
+// Publique em: Firebase Console → Firestore Database → Regras (cole este conteúdo)
+// ou com a CLI: firebase deploy --only firestore:rules
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function logado() {
+      return request.auth != null;
+    }
+
+    function dono(uid) {
+      return logado() && request.auth.uid == uid;
+    }
+
+    // Dados privados (CPF, email): só o próprio usuário lê e escreve
+    match /usuarios/{uid} {
+      allow read, write: if dono(uid);
+    }
+
+    // Placar público: qualquer usuário logado lê; cada um só escreve o seu.
+    // Atualizações só podem somar exatamente 3 XP e 1 denúncia (ou só trocar o nome).
+    match /ranking/{uid} {
+      allow read: if logado();
+      allow create: if dono(uid)
+        && request.resource.data.keys().hasOnly(["nome", "xp", "denuncias"]);
+      allow update: if dono(uid)
+        && request.resource.data.keys().hasOnly(["nome", "xp", "denuncias"])
+        && (
+          (request.resource.data.xp == resource.data.xp + 3
+            && request.resource.data.denuncias == resource.data.denuncias + 1)
+          || (request.resource.data.xp == resource.data.xp
+            && request.resource.data.denuncias == resource.data.denuncias)
+        );
+    }
+
+    // Denúncias: leitura para logados; criação só em nome próprio; imutáveis depois
+    match /denuncias/{id} {
+      allow read: if logado();
+      allow create: if logado()
+        && request.resource.data.usuario_uid == request.auth.uid
+        && request.resource.data.descricao is string
+        && request.resource.data.descricao.size() >= 20
+        && request.resource.data.descricao.size() <= 2000;
+      allow update, delete: if false;
+    }
+  }
+}

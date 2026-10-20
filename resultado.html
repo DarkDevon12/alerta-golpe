@@ -3,43 +3,53 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Resultado - AlertaGolpe</title>
+  <title>Resultado — AlertaGolpe</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-  <div class="container">
+  <header class="topbar">
+    <div class="topbar-inner">
+      <a href="index.html" class="brand">
+        <span class="brand-mark"><svg class="icon" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg></span>
+        AlertaGolpe
+      </a>
+      <nav class="nav">
+        <a href="index.html" aria-current="page"><svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>Verificar</a>
+        <a href="denunciar.html"><svg class="icon" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>Denunciar</a>
+        <a href="ranking.html"><svg class="icon" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M17 5h3v2a3 3 0 0 1-3 3M7 5H4v2a3 3 0 0 0 3 3"/></svg>Ranking</a>
+      </nav>
+      <div class="topbar-user">
+        <span id="nav-usuario"></span>
+        <button id="btn-sair" class="btn-sair" type="button"><svg class="icon" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg>Sair</button>
+      </div>
+    </div>
+  </header>
 
-    <header class="header">
-      <h1>🔍 Resultado</h1>
-    </header>
+  <main class="page">
+    <div class="resultado">
 
-    <main class="main">
-      <div class="result-box">
+      <section class="card resultado-card">
+        <span class="eyebrow" id="tipo-busca">Resultado da consulta</span>
+        <h1 class="resultado-valor" id="numero"></h1>
 
-        <h2 id="numero"></h2>
-
-        <div id="risco" class="risco baixo">Carregando...</div>
-
-        <p id="denuncias">Carregando denúncias...</p>
-
-        <div class="relatos">
-          <h3>Relatos:</h3>
+        <div class="resultado-resumo">
+          <span id="risco" class="risco carregando">Consultando…</span>
+          <span id="denuncias" class="resultado-qtd"></span>
         </div>
 
-        <a href="index.html">
-          <button class="btn-primary">🔎 Nova busca</button>
-        </a>
+        <div class="resultado-acoes">
+          <a href="index.html" class="btn btn-secondary">Nova busca</a>
+          <a href="denunciar.html" class="btn btn-primary">Denunciar este contato</a>
+        </div>
+      </section>
 
-      </div>
-    </main>
+      <section class="relatos" id="relatos"></section>
 
-    <footer class="footer">
-      <a href="denunciar.html">🚨 Fazer uma denúncia</a>
-    </footer>
+    </div>
+  </main>
 
-  </div>
-
+  <script type="module" src="js/layout.js"></script>
   <script type="module" src="js/resultado.js"></script>
 
 </body>

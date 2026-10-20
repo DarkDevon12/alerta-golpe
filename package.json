@@ -1,8 +1,8 @@
 {
   "name": "alerta-golpe",
   "version": "1.0.0",
-  "description": "> Plataforma de consulta e denúncia de golpes digitais — Trabalho de Conclusão de Curso (TCC)  \r > Curso de Sistemas de Informação",
-  "main": "index.js",
+  "description": "Plataforma de consulta e denúncia de golpes digitais — TCC de Sistemas de Informação",
+  "private": true,
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -15,7 +15,7 @@
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
+  "type": "module",
   "bugs": {
     "url": "https://github.com/DarkDevon12/alerta-golpe/issues"
   },

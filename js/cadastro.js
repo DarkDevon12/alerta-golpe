@@ -1,10 +1,8 @@
-import { 
-  auth, 
-  db,
-  createUserWithEmailAndPassword,
-  setDoc,
-  doc
+import {
+  auth,
+  createUserWithEmailAndPassword
 } from "./firebase.js";
+import { criarPerfil } from "./usuarios.js";
 
 // Validações de senha
 function validarSenha(senha) {
@@ -49,21 +47,22 @@ document.getElementById("confirmar-senha").addEventListener("input", function(e)
   document.getElementById("btn-cadastro").disabled = !(todosRequisitos && senhasIguais);
 });
 
-// Valida e formata CPF
+// Valida CPF pelos dígitos verificadores
 function validarCPF(cpf) {
-  // Remove caracteres especiais
-  const cpfLimpo = cpf.replace(/\D/g, "");
+  const d = cpf.replace(/\D/g, "");
 
-  if (cpfLimpo.length !== 11) {
+  if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) {
     return false;
   }
 
-  // Validação básica (não é criptografia, só evita CPF óbvio)
-  const sequencias = ["00000000000", "11111111111", "22222222222", "33333333333", 
-                      "44444444444", "55555555555", "66666666666", "77777777777", 
-                      "88888888888", "99999999999"];
-  
-  return !sequencias.includes(cpfLimpo);
+  const digito = (tamanho) => {
+    let soma = 0;
+    for (let i = 0; i < tamanho; i++) soma += Number(d[i]) * (tamanho + 1 - i);
+    const resto = (soma * 10) % 11;
+    return resto === 10 ? 0 : resto;
+  };
+
+  return digito(9) === Number(d[9]) && digito(10) === Number(d[10]);
 }
 
 function formatarCPF(cpf) {
@@ -115,17 +114,9 @@ async function fazerCadastro(event) {
     const uid = userCredential.user.uid;
 
     // Salva dados do usuário no Firestore
-    await setDoc(doc(db, "usuarios", uid), {
-      nome,
-      cpf,
-      email,
-      xp: 0,
-      cuponsGanhos: [],
-      dataCriacaoConta: new Date(),
-      uid
-    });
+    await criarPerfil(uid, { nome, cpf, email });
 
-    alert("Conta criada com sucesso! 🎉");
+    alert("Conta criada com sucesso!");
     window.location.href = "login.html";
 
   } catch (error) {
