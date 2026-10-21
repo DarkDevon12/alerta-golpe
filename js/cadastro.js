@@ -3,6 +3,10 @@ import {
   createUserWithEmailAndPassword
 } from "./firebase.js";
 import { criarPerfil } from "./usuarios.js";
+import { ativarOlhoSenha } from "./olho-senha.js";
+import { enviarEmailVerificacao } from "./verificacao-email.js";
+
+ativarOlhoSenha();
 
 // Validações de senha
 function validarSenha(senha) {
@@ -10,42 +14,12 @@ function validarSenha(senha) {
     maiuscula: /[A-Z]/.test(senha),
     minuscula: /[a-z]/.test(senha),
     numero: /[0-9]/.test(senha),
-    simbolo: /[!@#$%^&*()_\-+=\[\]{};:'",.<>?/\\|`~]/.test(senha),
+    simbolo: /[!@#$%^&*()_\-+=\[\]{};:'",.<>?/\|`~]/.test(senha),
     tamanho: senha.length >= 8
   };
 
   return requisitos;
 }
-
-// Atualiza visual dos requisitos conforme digita
-document.getElementById("senha").addEventListener("input", function(e) {
-  const senha = e.target.value;
-  const requisitos = validarSenha(senha);
-
-  document.getElementById("req-maiuscula").classList.toggle("ok", requisitos.maiuscula);
-  document.getElementById("req-minuscula").classList.toggle("ok", requisitos.minuscula);
-  document.getElementById("req-numero").classList.toggle("ok", requisitos.numero);
-  document.getElementById("req-simbolo").classList.toggle("ok", requisitos.simbolo);
-  document.getElementById("req-tamanho").classList.toggle("ok", requisitos.tamanho);
-
-  // Habilita botão apenas se tudo OK
-  const senhaConfirm = document.getElementById("confirmar-senha").value;
-  const todosRequisitos = Object.values(requisitos).every(r => r);
-  const senhasIguais = senha === senhaConfirm && senha.length > 0;
-
-  document.getElementById("btn-cadastro").disabled = !(todosRequisitos && senhasIguais);
-});
-
-document.getElementById("confirmar-senha").addEventListener("input", function(e) {
-  const senha = document.getElementById("senha").value;
-  const confirm = e.target.value;
-  const requisitos = validarSenha(senha);
-
-  const todosRequisitos = Object.values(requisitos).every(r => r);
-  const senhasIguais = senha === confirm && senha.length > 0;
-
-  document.getElementById("btn-cadastro").disabled = !(todosRequisitos && senhasIguais);
-});
 
 // Valida CPF pelos dígitos verificadores
 function validarCPF(cpf) {
@@ -73,40 +47,103 @@ function formatarCPF(cpf) {
   return cpf;
 }
 
-document.getElementById("cpf").addEventListener("input", function(e) {
+const campo = (id) => document.getElementById(id);
+
+campo("cpf").addEventListener("input", function(e) {
   e.target.value = formatarCPF(e.target.value);
 });
 
-async function fazerCadastro(event) {
+// Atualiza visual dos requisitos conforme digita
+function atualizarRequisitos() {
+  const senha = campo("senha").value;
+  const requisitos = validarSenha(senha);
+
+  campo("req-maiuscula").classList.toggle("ok", requisitos.maiuscula);
+  campo("req-minuscula").classList.toggle("ok", requisitos.minuscula);
+  campo("req-numero").classList.toggle("ok", requisitos.numero);
+  campo("req-simbolo").classList.toggle("ok", requisitos.simbolo);
+  campo("req-tamanho").classList.toggle("ok", requisitos.tamanho);
+  campo("req-iguais").classList.toggle("ok", senha.length > 0 && senha === campo("confirmar-senha").value);
+}
+
+campo("senha").addEventListener("input", atualizarRequisitos);
+campo("confirmar-senha").addEventListener("input", atualizarRequisitos);
+
+// ── Etapas ───────────────────────────────────────────────
+// Cada etapa devolve uma mensagem de erro, ou null se estiver tudo certo.
+
+const VALIDACOES = [
+  () => campo("nome").value.trim().length < 3 ? "Digite seu nome completo." : null,
+
+  () => validarCPF(campo("cpf").value) ? null : "CPF inválido. Confira os números.",
+
+  () => {
+    const email = campo("email");
+    return email.value.trim() && email.checkValidity() ? null : "Digite um email válido.";
+  },
+
+  () => {
+    const senha = campo("senha").value;
+    if (!Object.values(validarSenha(senha)).every(r => r)) return "A senha não atende a todos os requisitos.";
+    if (senha !== campo("confirmar-senha").value) return "As senhas não coincidem.";
+    return null;
+  }
+];
+
+const etapas = [...document.querySelectorAll(".etapa")];
+const erroEtapa = campo("erro-etapa");
+const btnVoltar = campo("btn-voltar");
+const btnAvancar = campo("btn-avancar");
+let etapaAtual = 0;
+
+function mostrarErro(mensagem) {
+  erroEtapa.textContent = mensagem || "";
+  erroEtapa.hidden = !mensagem;
+}
+
+function irParaEtapa(indice) {
+  etapaAtual = indice;
+  etapas.forEach((etapa, i) => { etapa.hidden = i !== indice; });
+
+  const ultima = indice === etapas.length - 1;
+  campo("etapa-contador").textContent = `Etapa ${indice + 1} de ${etapas.length}`;
+  campo("etapa-barra").style.width = `${((indice + 1) / etapas.length) * 100}%`;
+  campo("cadastro-google").hidden = indice !== 0;
+  btnVoltar.hidden = indice === 0;
+  btnAvancar.textContent = ultima ? "Criar conta" : "Continuar";
+
+  mostrarErro(null);
+  etapas[indice].querySelector("input")?.focus();
+}
+
+btnVoltar.addEventListener("click", () => irParaEtapa(etapaAtual - 1));
+
+async function avancar(event) {
   event.preventDefault();
 
-  const nome = document.getElementById("nome").value.trim();
-  const cpf = document.getElementById("cpf").value.replace(/\D/g, "");
-  const email = document.getElementById("email").value.trim();
-  const senha = document.getElementById("senha").value;
-  const confirmarSenha = document.getElementById("confirmar-senha").value;
-
-  // Validações
-  if (!nome || !cpf || !email || !senha) {
-    alert("Preencha todos os campos");
+  const erro = VALIDACOES[etapaAtual]();
+  if (erro) {
+    mostrarErro(erro);
+    etapas[etapaAtual].querySelector("input")?.focus();
     return;
   }
 
-  if (!validarCPF(cpf)) {
-    alert("CPF inválido");
+  if (etapaAtual < etapas.length - 1) {
+    irParaEtapa(etapaAtual + 1);
     return;
   }
 
-  if (senha !== confirmarSenha) {
-    alert("As senhas não coincidem");
-    return;
-  }
+  await fazerCadastro();
+}
 
-  const requisitos = validarSenha(senha);
-  if (!Object.values(requisitos).every(r => r)) {
-    alert("Senha não atende aos requisitos");
-    return;
-  }
+async function fazerCadastro() {
+  const nome = campo("nome").value.trim();
+  const cpf = campo("cpf").value.replace(/\D/g, "");
+  const email = campo("email").value.trim();
+  const senha = campo("senha").value;
+
+  btnAvancar.disabled = true;
+  btnVoltar.disabled = true;
 
   try {
     // Cria usuário no Firebase Auth
@@ -116,22 +153,41 @@ async function fazerCadastro(event) {
     // Salva dados do usuário no Firestore
     await criarPerfil(uid, { nome, cpf, email });
 
-    alert("Conta criada com sucesso!");
-    window.location.href = "login.html";
+    // A conta só funciona depois de confirmar o email
+    await enviarEmailVerificacao(userCredential.user)
+      .catch((e) => console.warn("Email de confirmação:", e.code)); // dá para reenviar no login
+
+    mostrarConcluido(email);
+    return;
 
   } catch (error) {
     console.error("Erro ao criar conta:", error.code);
 
+    // Erros de email voltam para a etapa do email
     if (error.code === "auth/email-already-in-use") {
-      alert("Este email já está registrado");
+      irParaEtapa(2);
+      mostrarErro("Este email já está registrado. Use outro ou faça login.");
     } else if (error.code === "auth/invalid-email") {
-      alert("Email inválido");
+      irParaEtapa(2);
+      mostrarErro("Email inválido.");
     } else if (error.code === "auth/weak-password") {
-      alert("Senha muito fraca");
+      mostrarErro("Senha muito fraca.");
     } else {
-      alert("Erro ao criar conta: " + error.message);
+      mostrarErro("Erro ao criar conta: " + error.message);
     }
+  } finally {
+    btnAvancar.disabled = false;
+    btnVoltar.disabled = false;
   }
 }
 
-document.getElementById("form-cadastro").addEventListener("submit", fazerCadastro);
+function mostrarConcluido(email) {
+  ["form-cadastro", "etapas-progresso", "cadastro-google", "cadastro-alternativa"]
+    .forEach((id) => { campo(id).hidden = true; });
+  campo("email-enviado").textContent = email;
+  campo("cadastro-concluido").hidden = false;
+}
+
+campo("form-cadastro").addEventListener("submit", avancar);
+
+irParaEtapa(0);

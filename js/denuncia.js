@@ -2,13 +2,17 @@ import {
   db,
   collection,
   doc,
-  getDoc,
+  getDocs,
+  query,
+  where,
   writeBatch,
   increment
 } from "./firebase.js";
 import { usuarioPronto } from "./layout.js";
-import { XP_POR_DENUNCIA, obterPerfil } from "./usuarios.js";
+import { XP_POR_DENUNCIA, obterPerfil, sincronizarRanking } from "./usuarios.js";
+import { MOEDAS_POR_DENUNCIA } from "./personalizacao.js";
 import { escapeHtml } from "./util.js";
+import { chaveAlvo, idDenuncia } from "./alvos.js";
 
 const MIN_DESCRICAO = 20;
 
@@ -16,9 +20,12 @@ const form = document.getElementById("form-denuncia");
 const radiosTipo = form.querySelectorAll('input[name="tipo"]');
 const inputTelefone = document.getElementById("input-telefone");
 const inputLink = document.getElementById("input-link");
+const inputEmail = document.getElementById("input-email");
 const inputDescricao = document.getElementById("input-descricao");
 const campoTelefone = document.getElementById("campo-telefone");
 const campoLink = document.getElementById("campo-link");
+const campoEmail = document.getElementById("campo-email");
+const avisoAlvo = document.getElementById("aviso-alvo");
 const analiseContainer = document.getElementById("analise-container");
 const btnAnalisar = document.getElementById("btn-analisar");
 const btnEnviar = document.getElementById("btn-enviar");
@@ -26,6 +33,27 @@ const charCount = document.getElementById("char-count");
 
 // Última análise válida para o conteúdo atual do formulário
 let ultimaAnalise = null;
+
+// "tipo:chave" de tudo que o usuário já denunciou (cada alvo só uma vez)
+const minhasDenuncias = new Set();
+
+const CAMPOS = {
+  telefone: { input: inputTelefone, campo: campoTelefone },
+  link: { input: inputLink, campo: campoLink },
+  email: { input: inputEmail, campo: campoEmail }
+};
+
+const MENSAGENS_INVALIDO = {
+  telefone: "Informe o número com DDD, ex.: (11) 98765-4321.",
+  link: "Link inválido. Informe o endereço do site, ex.: site-falso.com/promo.",
+  email: "Email inválido. Ex.: seguranca@banco-falso.com."
+};
+
+const MENSAGENS_REPETIDA = {
+  telefone: "Você já denunciou este número. Cada pessoa pode denunciar o mesmo telefone uma única vez.",
+  link: "Você já denunciou este site. Cada pessoa pode denunciar o mesmo link uma única vez.",
+  email: "Você já denunciou este email. Cada pessoa pode denunciar o mesmo endereço uma única vez."
+};
 
 const ICONE_CHECK = '<svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>';
 const ICONE_IA = '<svg class="icon" viewBox="0 0 24 24"><path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 17v4M17 19h4"/></svg>';
@@ -39,15 +67,45 @@ const RISCOS = {
 // ── LEITURA DO FORMULÁRIO ───────────────────────────
 function lerFormulario() {
   const tipo = form.querySelector('input[name="tipo"]:checked')?.value || "";
-  const valor = tipo === "telefone"
-    ? inputTelefone.value.trim()
-    : tipo === "link" ? inputLink.value.trim() : "";
+  const valor = CAMPOS[tipo]?.input.value.trim() || "";
   const descricao = inputDescricao.value.trim();
   return { tipo, valor, descricao };
 }
 
-function formularioCompleto({ tipo, valor, descricao }) {
-  return Boolean(tipo && valor && descricao.length >= MIN_DESCRICAO);
+// Mensagem de erro sobre o alvo (inválido ou já denunciado), ou null
+function problemaAlvo({ tipo, valor }) {
+  if (!tipo || !valor) return null;
+  const chave = chaveAlvo(tipo, valor);
+  if (!chave) return MENSAGENS_INVALIDO[tipo];
+  if (minhasDenuncias.has(`${tipo}:${chave}`)) return MENSAGENS_REPETIDA[tipo];
+  return null;
+}
+
+function formularioCompleto(dados) {
+  return Boolean(dados.tipo && dados.valor && !problemaAlvo(dados) && dados.descricao.length >= MIN_DESCRICAO);
+}
+
+function mostrarAvisoAlvo(mensagem) {
+  avisoAlvo.textContent = mensagem || "";
+  avisoAlvo.hidden = !mensagem;
+}
+
+async function carregarMinhasDenuncias() {
+  const user = await usuarioPronto;
+  if (!user) return;
+
+  try {
+    const snap = await getDocs(query(collection(db, "denuncias"), where("usuario_uid", "==", user.uid)));
+    snap.forEach((d) => {
+      const { tipo } = d.data();
+      const chave = chaveAlvo(tipo, d.data()[tipo]);
+      if (chave) minhasDenuncias.add(`${tipo}:${chave}`);
+    });
+    atualizarEstado();
+  } catch (error) {
+    // As regras do Firestore continuam barrando a repetição
+    console.warn("Não foi possível carregar suas denúncias:", error.message);
+  }
 }
 
 // ── PAINEL DE ANÁLISE ───────────────────────────────
@@ -176,6 +234,14 @@ function atualizarEstado() {
   charCount.classList.toggle("ok", tamanho >= MIN_DESCRICAO);
 
   btnAnalisar.disabled = !formularioCompleto(dados);
+
+  // Repetida aparece na hora; formato inválido só ao sair do campo ou enviar
+  const problema = problemaAlvo(dados);
+  if (problema === MENSAGENS_REPETIDA[dados.tipo]) {
+    mostrarAvisoAlvo(problema);
+  } else if (!problema) {
+    mostrarAvisoAlvo(null);
+  }
 }
 
 function aoEditar() {
@@ -188,14 +254,17 @@ function aoEditar() {
 
 radiosTipo.forEach((radio) => {
   radio.addEventListener("change", () => {
-    campoTelefone.hidden = radio.value !== "telefone";
-    campoLink.hidden = radio.value !== "link";
-    (radio.value === "telefone" ? inputTelefone : inputLink).focus();
+    Object.entries(CAMPOS).forEach(([tipo, { campo }]) => { campo.hidden = radio.value !== tipo; });
+    CAMPOS[radio.value].input.focus();
+    mostrarAvisoAlvo(null);
     aoEditar();
   });
 });
 
-[inputTelefone, inputLink, inputDescricao].forEach((el) => el.addEventListener("input", aoEditar));
+[inputTelefone, inputLink, inputEmail, inputDescricao].forEach((el) => el.addEventListener("input", aoEditar));
+[inputTelefone, inputLink, inputEmail].forEach((el) => {
+  el.addEventListener("blur", () => mostrarAvisoAlvo(problemaAlvo(lerFormulario())));
+});
 btnAnalisar.addEventListener("click", analisar);
 
 // ── ENVIO ───────────────────────────────────────────
@@ -212,8 +281,14 @@ form.addEventListener("submit", async (e) => {
     return;
   }
   if (!valor) {
-    alert(tipo === "telefone" ? "Digite o telefone." : "Digite o link.");
-    (tipo === "telefone" ? inputTelefone : inputLink).focus();
+    alert({ telefone: "Digite o telefone.", link: "Digite o link.", email: "Digite o email." }[tipo]);
+    CAMPOS[tipo].input.focus();
+    return;
+  }
+  const problema = problemaAlvo({ tipo, valor });
+  if (problema) {
+    mostrarAvisoAlvo(problema);
+    CAMPOS[tipo].input.focus();
     return;
   }
   if (descricao.length < MIN_DESCRICAO) {
@@ -230,11 +305,18 @@ form.addEventListener("submit", async (e) => {
     const perfil = await obterPerfil(user.uid);
     const nome = perfil?.nome || user.displayName || "Usuário";
 
-    const batch = writeBatch(db);
+    // Contas antigas ganham/migram a entrada do ranking antes de pontuar
+    await sincronizarRanking(user.uid);
 
-    batch.set(doc(collection(db, "denuncias")), {
+    const batch = writeBatch(db);
+    const chave = chaveAlvo(tipo, valor);
+    const idDoc = idDenuncia(user.uid, tipo, chave);
+
+    // ID fixo por usuário + alvo: as regras recusam uma segunda denúncia igual
+    batch.set(doc(db, "denuncias", idDoc), {
       [tipo]: valor,
       tipo,
+      chave,
       descricao,
       data: new Date(),
       usuario_uid: user.uid,
@@ -255,31 +337,25 @@ form.addEventListener("submit", async (e) => {
       denuncias: increment(1)
     }, { merge: true });
 
-    // Entrada pública do ranking; contas antigas começam com o XP que já tinham
-    const rankingRef = doc(db, "ranking", user.uid);
-    const rankingSnap = await getDoc(rankingRef);
-    if (rankingSnap.exists()) {
-      batch.update(rankingRef, {
-        nome,
-        xp: increment(XP_POR_DENUNCIA),
-        denuncias: increment(1)
-      });
-    } else {
-      batch.set(rankingRef, {
-        nome,
-        xp: (perfil?.xp || 0) + XP_POR_DENUNCIA,
-        denuncias: (perfil?.denuncias || 0) + 1
-      });
-    }
+    // Perfil público: as regras só aceitam +3 XP / +10 moedas se esta
+    // denúncia (ultimaDenuncia) for criada neste mesmo batch
+    batch.update(doc(db, "ranking", user.uid), {
+      xp: increment(XP_POR_DENUNCIA),
+      denuncias: increment(1),
+      moedas: increment(MOEDAS_POR_DENUNCIA),
+      ultimaDenuncia: idDoc
+    });
 
     await batch.commit();
 
-    alert(`Denúncia enviada! Você ganhou ${XP_POR_DENUNCIA} XP.`);
-    window.location.href = "ranking.html";
+    alert(`Denúncia enviada! Você ganhou ${XP_POR_DENUNCIA} XP e ${MOEDAS_POR_DENUNCIA} moedas.`);
+    window.location.href = "perfil.html#denuncias";
 
   } catch (error) {
     console.error("Erro ao enviar denúncia:", error);
-    alert("Erro ao enviar denúncia: " + error.message);
+    alert(error.code === "permission-denied"
+      ? "Não foi possível enviar: você já denunciou este alvo ou ainda não confirmou seu email."
+      : "Erro ao enviar denúncia: " + error.message);
     btnEnviar.disabled = false;
     btnEnviar.textContent = "Enviar denúncia";
     atualizarEstado();
@@ -288,3 +364,4 @@ form.addEventListener("submit", async (e) => {
 
 mostrarVazio();
 atualizarEstado();
+carregarMinhasDenuncias();

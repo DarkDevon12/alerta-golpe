@@ -6,8 +6,20 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    function logado() {
+    // Qualquer sessão, inclusive a anônima da consulta grátis
+    function autenticado() {
       return request.auth != null;
+    }
+
+    // Conta de verdade (email/senha ou Google), não a sessão anônima
+    function logado() {
+      return autenticado()
+        && request.auth.token.firebase.sign_in_provider != "anonymous";
+    }
+
+    // Conta que já confirmou o email (contas Google já vêm confirmadas)
+    function verificado() {
+      return logado() && request.auth.token.email_verified == true;
     }
 
     function dono(uid) {
@@ -19,27 +31,145 @@ service cloud.firestore {
       allow read, write: if dono(uid);
     }
 
-    // Placar público: qualquer usuário logado lê; cada um só escreve o seu.
-    // Atualizações só podem somar exatamente 3 XP e 1 denúncia (ou só trocar o nome).
+    // ── Perfil público, ranking e loja ────────────────────────────
+    // ranking/{uid}: nome, xp, denuncias, moedas, itens (comprados),
+    // avatar, borda, tema, perfilPublico, ultimaDenuncia, ultimaCompra.
+    // Qualquer usuário logado lê; cada um só escreve o seu, e só por um
+    // destes caminhos: criar zerado, migrar entrada antiga, registrar uma
+    // denúncia, comprar um item ou personalizar o perfil.
+    //
+    // Catálogo: estes IDs, preços e XP mínimos repetem js/personalizacao.js.
+
+    function gratis() {
+      return ["iniciais", "escudo", "lupa", "cadeado", "olho", "raio", "coracao",
+              "sem-borda", "escuro", "claro", "contraste"];
+    }
+
+    function precos() {
+      return {
+        "coroa": 30, "foguete": 30, "diamante": 30, "chama": 30, "estrela": 30, "lua": 30,
+        "prata": 20, "ouro": 40, "neon": 60, "fogo": 80, "arco-iris": 100,
+        "oceano": 50, "aurora": 50, "terminal": 80
+      };
+    }
+
+    function porNivel() {
+      return { "trofeu": 100, "bronze": 30, "lenda": 500 };
+    }
+
+    function camposPerfil() {
+      return ["nome", "xp", "denuncias", "moedas", "itens", "avatar", "borda", "tema",
+              "perfilPublico", "ultimaDenuncia", "ultimaCompra"];
+    }
+
+    function nomeValido(nome) {
+      return nome is string && nome.size() >= 2 && nome.size() <= 60;
+    }
+
+    // Item grátis, comprado ou liberado pelo XP
+    function podeUsar(item, dados) {
+      return item in gratis()
+        || item in dados.itens
+        || (item in porNivel() && dados.xp >= porNivel()[item]);
+    }
+
+    function alterou(campos) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(campos);
+    }
+
+    // +3 XP, +1 denúncia e +10 moedas, só se a denúncia citada em
+    // ultimaDenuncia for criada neste mesmo envio (batch) e for do usuário
+    function registraDenuncia(uid) {
+      let depois = request.resource.data;
+      let caminho = /databases/$(database)/documents/denuncias/$(depois.ultimaDenuncia);
+      return verificado()
+        && alterou(["xp", "denuncias", "moedas", "ultimaDenuncia"])
+        && depois.xp == resource.data.xp + 3
+        && depois.denuncias == resource.data.denuncias + 1
+        && depois.moedas == resource.data.moedas + 10
+        && depois.ultimaDenuncia is string
+        && !exists(caminho)
+        && existsAfter(caminho)
+        && getAfter(caminho).data.usuario_uid == uid;
+    }
+
+    // Um item novo por vez, pagando o preço exato, sem ficar negativo
+    function compraItem() {
+      let depois = request.resource.data;
+      let item = depois.ultimaCompra;
+      return alterou(["moedas", "itens", "ultimaCompra"])
+        && item in precos()
+        && !(item in resource.data.itens)
+        && depois.itens == resource.data.itens.concat([item])
+        && depois.moedas == resource.data.moedas - precos()[item]
+        && depois.moedas >= 0;
+    }
+
+    function personalizaPerfil() {
+      let depois = request.resource.data;
+      return alterou(["nome", "avatar", "borda", "tema", "perfilPublico"])
+        && nomeValido(depois.nome)
+        && podeUsar(depois.avatar, depois)
+        && podeUsar(depois.borda, depois)
+        && podeUsar(depois.tema, depois)
+        && depois.perfilPublico is bool;
+    }
+
+    // Entradas criadas antes da loja: ganham os campos novos e
+    // 10 moedas por denúncia já feita; XP e denúncias não mudam
+    function migraEntradaAntiga() {
+      let depois = request.resource.data;
+      return !("moedas" in resource.data)
+        && depois.xp == resource.data.xp
+        && depois.denuncias == resource.data.denuncias
+        && depois.moedas == resource.data.denuncias * 10
+        && depois.itens == []
+        && depois.avatar == "iniciais"
+        && depois.borda == "sem-borda"
+        && depois.tema == "escuro"
+        && depois.perfilPublico == false;
+    }
+
     match /ranking/{uid} {
       allow read: if logado();
+
+      // Sempre começa zerado (cadastro ou conta antiga sem entrada)
       allow create: if dono(uid)
-        && request.resource.data.keys().hasOnly(["nome", "xp", "denuncias"]);
+        && request.resource.data.keys().hasOnly(camposPerfil())
+        && nomeValido(request.resource.data.nome)
+        && request.resource.data.xp == 0
+        && request.resource.data.denuncias == 0
+        && request.resource.data.moedas == 0
+        && request.resource.data.itens == []
+        && request.resource.data.avatar == "iniciais"
+        && request.resource.data.borda == "sem-borda"
+        && request.resource.data.tema == "escuro"
+        && request.resource.data.perfilPublico == false;
+
       allow update: if dono(uid)
-        && request.resource.data.keys().hasOnly(["nome", "xp", "denuncias"])
+        && request.resource.data.keys().hasOnly(camposPerfil())
         && (
-          (request.resource.data.xp == resource.data.xp + 3
-            && request.resource.data.denuncias == resource.data.denuncias + 1)
-          || (request.resource.data.xp == resource.data.xp
-            && request.resource.data.denuncias == resource.data.denuncias)
+          migraEntradaAntiga()
+          || ("moedas" in resource.data
+            && (registraDenuncia(uid) || compraItem() || personalizaPerfil()))
         );
     }
 
-    // Denúncias: leitura para logados; criação só em nome próprio; imutáveis depois
+    // Denúncias: leitura para qualquer sessão (visitantes contam denúncias na
+    // consulta grátis); criação só com email confirmado e em nome próprio;
+    // imutáveis depois.
+    // O ID é "{uid}_{tipo}_{chave}" (ver js/alvos.js). Como criar por cima
+    // de um documento existente conta como update (proibido), cada usuário
+    // só consegue denunciar o mesmo telefone/link/email uma vez.
     match /denuncias/{id} {
-      allow read: if logado();
-      allow create: if logado()
+      allow read: if autenticado();
+      allow create: if verificado()
         && request.resource.data.usuario_uid == request.auth.uid
+        && request.resource.data.tipo in ["telefone", "link", "email"]
+        && request.resource.data.chave is string
+        && request.resource.data.chave.size() > 0
+        && request.resource.data.chave.size() <= 300
+        && id == request.auth.uid + "_" + request.resource.data.tipo + "_" + request.resource.data.chave
         && request.resource.data.descricao is string
         && request.resource.data.descricao.size() >= 20
         && request.resource.data.descricao.size() <= 2000;

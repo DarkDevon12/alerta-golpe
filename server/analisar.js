@@ -13,9 +13,11 @@ const MODELO_RESERVA = "gemini-3.1-flash-lite";
 
 const LIMITES = { valor: 300, descricao: 2000 };
 
+const ROTULOS = { telefone: "Telefone", link: "Link", email: "Email do remetente" };
+
 const PROMPT = `Você é um analista brasileiro especializado em fraudes digitais (golpes por WhatsApp, SMS, ligação, Pix, links falsos, phishing, falso suporte bancário, falso parente etc).
 
-Analise a denúncia abaixo, enviada por um usuário de uma plataforma colaborativa de denúncias de golpes. Avalie o risco de ser golpe com base no conteúdo da descrição e no telefone/link informado.
+Analise a denúncia abaixo, enviada por um usuário de uma plataforma colaborativa de denúncias de golpes. Avalie o risco de ser golpe com base no conteúdo da descrição e no telefone, link ou email do remetente informado (em emails, observe se o domínio imita bancos, lojas ou órgãos públicos).
 
 Regras:
 - Responda em português do Brasil, de forma direta e sem jargão.
@@ -66,6 +68,15 @@ async function verificarUsuario(authHeader, firebaseApiKey) {
   );
 
   if (!resposta.ok) throw new ErroHttp(401, "Sessão expirada. Faça login novamente.");
+
+  // A sessão anônima da consulta grátis não tem provedor vinculado
+  const { users } = await resposta.json();
+  if (!users?.[0]?.providerUserInfo?.length) {
+    throw new ErroHttp(401, "Faça login para usar a análise.");
+  }
+  if (!users[0].emailVerified) {
+    throw new ErroHttp(403, "Confirme seu email para usar a análise.");
+  }
 }
 
 function validarEntrada(corpo) {
@@ -73,8 +84,8 @@ function validarEntrada(corpo) {
   const valor = String(corpo?.valor ?? "").trim();
   const descricao = String(corpo?.descricao ?? "").trim();
 
-  if (tipo !== "telefone" && tipo !== "link") throw new ErroHttp(400, "Tipo inválido.");
-  if (!valor) throw new ErroHttp(400, "Informe o telefone ou link.");
+  if (!ROTULOS[tipo]) throw new ErroHttp(400, "Tipo inválido.");
+  if (!valor) throw new ErroHttp(400, "Informe o telefone, link ou email.");
   if (descricao.length < 20) throw new ErroHttp(400, "A descrição precisa de pelo menos 20 caracteres.");
 
   return {
@@ -149,7 +160,7 @@ async function gerarComReserva(prompt, apiKey, model) {
 async function chamarGemini({ tipo, valor, descricao }, { apiKey, model }) {
   const prompt = PROMPT
     .replace("{tipo}", tipo)
-    .replace("{rotulo}", tipo === "telefone" ? "Telefone" : "Link")
+    .replace("{rotulo}", ROTULOS[tipo])
     .replace("{valor}", valor)
     .replace("{descricao}", descricao);
 

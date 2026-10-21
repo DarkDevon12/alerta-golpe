@@ -50,6 +50,7 @@ export default defineConfig(({ mode }) => {
           cadastro: resolve(__dirname, "cadastro.html"),
           denunciar: resolve(__dirname, "denunciar.html"),
           ranking: resolve(__dirname, "ranking.html"),
+          perfil: resolve(__dirname, "perfil.html"),
           resultado: resolve(__dirname, "resultado.html")
         }
       }

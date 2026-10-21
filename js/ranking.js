@@ -8,7 +8,8 @@ import {
 } from "./firebase.js";
 import { usuarioPronto } from "./layout.js";
 import { sincronizarRanking } from "./usuarios.js";
-import { escapeHtml, iniciais, nivelPorXp } from "./util.js";
+import { escapeHtml, nivelPorXp } from "./util.js";
+import { renderAvatar } from "./personalizacao.js";
 
 const TOP = 100;
 
@@ -16,15 +17,8 @@ const lista = document.getElementById("ranking-lista");
 const podio = document.getElementById("podio");
 const meuCard = document.getElementById("meu-card");
 
-// Cor do avatar derivada do nome, para cada pessoa ter sempre a mesma
-function hue(texto) {
-  let h = 0;
-  for (const c of String(texto)) h = (h * 31 + c.charCodeAt(0)) % 360;
-  return h;
-}
-
-function avatar(nome) {
-  return `<span class="avatar" style="--hue:${hue(nome)}">${escapeHtml(iniciais(nome))}</span>`;
+function linkPerfil(m) {
+  return `perfil.html?uid=${encodeURIComponent(m.uid)}`;
 }
 
 function formatarNumero(n) {
@@ -36,12 +30,12 @@ function renderPodio(top3) {
 
   // Ordem visual: 2º, 1º, 3º
   podio.innerHTML = [top3[1], top3[0], top3[2]].map((m) => `
-    <div class="card podio-item p${m.posicao}">
-      ${avatar(m.nome)}
+    <a href="${linkPerfil(m)}" class="card podio-item p${m.posicao}">
+      ${renderAvatar(m)}
       <div class="podio-nome" title="${escapeHtml(m.nome)}">${escapeHtml(m.nome)}</div>
       <div class="podio-xp">${formatarNumero(m.xp)} XP · ${nivelPorXp(m.xp).nome}</div>
       <div class="podio-base">${m.posicao}</div>
-    </div>
+    </a>
   `).join("");
   podio.hidden = false;
 }
@@ -58,9 +52,9 @@ function renderLista(membros, meuUid) {
     <li class="placar-linha${m.uid === meuUid ? " eu" : ""}">
       <span class="placar-pos">${m.posicao}</span>
       <div class="placar-membro">
-        ${avatar(m.nome)}
+        ${renderAvatar(m)}
         <div>
-          <strong>${escapeHtml(m.nome)}${m.uid === meuUid ? "<small>você</small>" : ""}</strong>
+          <a href="${linkPerfil(m)}" class="placar-nome"><strong>${escapeHtml(m.nome)}${m.uid === meuUid ? "<small>você</small>" : ""}</strong></a>
           <span class="nivel">${nivelPorXp(m.xp).nome}</span>
         </div>
       </div>
@@ -83,7 +77,7 @@ function renderMeuCard(eu, posicao) {
     : "Nível máximo alcançado";
 
   meuCard.innerHTML = `
-    ${avatar(eu.nome)}
+    ${renderAvatar(eu)}
     <div>
       <div class="meu-pos">${posicao ? `Sua posição: <b>#${posicao}</b>` : `Fora do top ${TOP}`}</div>
       <div class="meu-nome">${escapeHtml(eu.nome)} <span class="nivel">${nivel.nome}</span></div>
@@ -117,7 +111,9 @@ async function carregarRanking() {
       posicao: i + 1,
       nome: d.data().nome || "Usuário",
       xp: d.data().xp || 0,
-      denuncias: d.data().denuncias || 0
+      denuncias: d.data().denuncias || 0,
+      avatar: d.data().avatar,
+      borda: d.data().borda
     }));
 
     document.getElementById("stat-membros").textContent = formatarNumero(membros.length);

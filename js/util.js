@@ -14,7 +14,7 @@ export function iniciais(nome) {
 }
 
 // Níveis de XP usados no ranking
-const NIVEIS = [
+export const NIVEIS = [
   { min: 500, nome: "Lenda" },
   { min: 250, nome: "Sentinela" },
   { min: 100, nome: "Guardião" },

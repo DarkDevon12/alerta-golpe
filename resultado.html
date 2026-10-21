@@ -4,9 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Resultado — AlertaGolpe</title>
+  <script>try{var t=localStorage.getItem("alertagolpe:tema");if(t&&t!=="escuro")document.documentElement.dataset.tema=t}catch(e){}</script>
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body data-visitante>
 
   <header class="topbar">
     <div class="topbar-inner">
@@ -43,6 +44,8 @@
           <a href="denunciar.html" class="btn btn-primary">Denunciar este contato</a>
         </div>
       </section>
+
+      <section class="card parecidos" id="parecidos" hidden></section>
 
       <section class="relatos" id="relatos"></section>
 

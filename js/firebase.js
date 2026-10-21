@@ -14,7 +14,10 @@ import {
   signOut,
   onAuthStateChanged,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  signInAnonymously,
+  sendPasswordResetEmail,
+  sendEmailVerification
 } from "firebase/auth";
 import {
   getFirestore,
@@ -28,6 +31,7 @@ import {
   setDoc,
   updateDoc,
   increment,
+  arrayUnion,
   orderBy,
   limit,
   writeBatch,
@@ -49,6 +53,7 @@ if (!firebaseConfig.apiKey) {
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
+auth.languageCode = "pt-BR"; // emails do Firebase (ex.: redefinir senha) em português
 const db = getFirestore(app);
 const googleProvider = new GoogleAuthProvider();
 
@@ -65,6 +70,7 @@ export {
   setDoc,
   updateDoc,
   increment,
+  arrayUnion,
   orderBy,
   limit,
   writeBatch,
@@ -75,5 +81,8 @@ export {
   onAuthStateChanged,
   GoogleAuthProvider,
   signInWithPopup,
+  signInAnonymously,
+  sendPasswordResetEmail,
+  sendEmailVerification,
   googleProvider
 };

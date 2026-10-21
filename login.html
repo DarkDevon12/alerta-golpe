@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Login - AlertaGolpe</title>
+  <script>try{var t=localStorage.getItem("alertagolpe:tema");if(t&&t!=="escuro")document.documentElement.dataset.tema=t}catch(e){}</script>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body class="auth-page">
@@ -17,42 +18,88 @@
         <p>Plataforma de proteção contra golpes digitais</p>
       </div>
 
-      <!-- Login com Google -->
-      <button id="btn-google" type="button" class="btn-auth btn-google">
-        <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-          <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-          <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-          <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-          <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-        </svg>
-        Entrar com Google
-      </button>
+      <p id="aviso-login" class="auth-aviso" hidden>Você já usou sua consulta grátis. Entre ou crie uma conta para continuar consultando.</p>
 
-      <div class="auth-divider">
-        <span>Ou continue com email</span>
-      </div>
+      <div id="painel-login">
 
-      <form id="form-login" class="auth-form">
+        <!-- Login com Google -->
+        <button id="btn-google" type="button" class="btn-auth btn-google">
+          <svg class="google-icon" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+          </svg>
+          Entrar com Google
+        </button>
 
-        <div class="form-group">
-          <label for="email">Email</label>
-          <input type="email" id="email" placeholder="seu@email.com" required>
+        <div class="auth-divider">
+          <span>Ou continue com email</span>
         </div>
 
-        <div class="form-group">
-          <label for="senha">Senha</label>
-          <input type="password" id="senha" placeholder="Digite sua senha" required>
+        <form id="form-login" class="auth-form">
+
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input type="email" id="email" placeholder="seu@email.com" autocomplete="email" required>
+          </div>
+
+          <div class="form-group">
+            <div class="label-linha">
+              <label for="senha">Senha</label>
+              <button type="button" id="btn-esqueci" class="link-acao">Esqueceu a senha?</button>
+            </div>
+            <input type="password" id="senha" placeholder="Digite sua senha" autocomplete="current-password" required>
+          </div>
+
+          <button type="submit" class="btn-auth btn-primary">Entrar</button>
+
+        </form>
+
+        <div class="auth-divider">
+          <span>Novo por aqui?</span>
         </div>
 
-        <button type="submit" class="btn-auth btn-primary">Entrar</button>
+        <a href="cadastro.html" class="btn-auth btn-secondary">Criar conta</a>
 
-      </form>
-
-      <div class="auth-divider">
-        <span>Novo por aqui?</span>
       </div>
 
-      <a href="cadastro.html" class="btn-auth btn-secondary">Criar conta</a>
+      <!-- Esqueceu a senha: o Firebase envia um link de redefinição -->
+      <div id="painel-recuperar" hidden>
+
+        <form id="form-recuperar" class="auth-form">
+          <div class="etapa-titulo">
+            <h2>Redefinir senha</h2>
+            <p>Informe o email da sua conta. Enviaremos um link para você criar uma nova senha.</p>
+          </div>
+
+          <div class="form-group">
+            <label for="email-recuperar">Email</label>
+            <input type="email" id="email-recuperar" placeholder="seu@email.com" autocomplete="email" required>
+          </div>
+
+          <p id="msg-recuperar" class="auth-msg" role="status" hidden></p>
+
+          <button type="submit" class="btn-auth btn-primary" id="btn-enviar-link">Enviar link</button>
+        </form>
+
+        <button type="button" id="btn-voltar-login" class="link-acao link-voltar">Voltar para o login</button>
+
+      </div>
+
+      <!-- Conta criada, mas o email ainda não foi confirmado -->
+      <div id="painel-verificar" class="auth-form" hidden>
+        <div class="etapa-titulo">
+          <h2>Confirme seu email</h2>
+          <p>Enviamos um link de confirmação para <strong id="email-verificar"></strong>. Abra o email e clique no link para ativar sua conta. Confira também a caixa de spam.</p>
+        </div>
+
+        <p id="msg-verificar" class="auth-msg" role="status" hidden></p>
+
+        <button type="button" id="btn-ja-confirmei" class="btn-auth btn-primary">Já confirmei</button>
+        <button type="button" id="btn-reenviar" class="btn-auth btn-secondary">Reenviar email</button>
+        <button type="button" id="btn-outra-conta" class="link-acao link-voltar">Usar outra conta</button>
+      </div>
 
     </div>
 
