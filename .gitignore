@@ -4,3 +4,6 @@ dist/
 .env.local
 .env.*.local
 .vercel/
+
+# Chave de conta de serviço do Firebase
+*firebase-adminsdk*.json

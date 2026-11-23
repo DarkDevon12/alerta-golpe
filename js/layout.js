@@ -8,7 +8,7 @@ import { auth, signOut } from "./firebase.js";
 import { obterUsuarioAtual, protegerRota, ehVisitante } from "./route-guard.js";
 import { sincronizarRanking } from "./usuarios.js";
 import { renderAvatar, aplicarTema, ICONE_MOEDA } from "./personalizacao.js";
-import { escapeHtml, nivelPorXp } from "./util.js";
+import { escapeHtml, nivelPorXp, nomePublico } from "./util.js";
 
 const aceitaVisitante = document.body.hasAttribute("data-visitante");
 
@@ -62,7 +62,7 @@ export function atualizarMenuPerfil(perfil) {
   document.querySelector(".menu-perfil-cab").innerHTML = `
     ${renderAvatar(perfil)}
     <div>
-      <strong>${escapeHtml(perfil.nome)}</strong>
+      <strong>${escapeHtml(nomePublico(perfil))}</strong>
       <span>${nivel.nome} · ${perfil.xp || 0} XP</span>
     </div>`;
   document.querySelector(".menu-perfil-moedas b").textContent = perfil.moedas || 0;

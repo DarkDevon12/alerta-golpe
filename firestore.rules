@@ -1,6 +1,11 @@
 // Regras do Firestore do AlertaGolpe.
 // Publique em: Firebase Console → Firestore Database → Regras (cole este conteúdo)
 // ou com a CLI: firebase deploy --only firestore:rules
+//
+// Resumo (LGPD): dados pessoais ficam em coleções que só o dono lê
+// (usuarios, denuncias); o que é público (ranking, relatos) não tem nome,
+// email, CPF nem uid de quem denunciou. A coleção cpfs só o servidor acessa
+// (o firebase-admin ignora estas regras).
 rules_version = '2';
 
 service cloud.firestore {
@@ -26,17 +31,45 @@ service cloud.firestore {
       return logado() && request.auth.uid == uid;
     }
 
-    // Dados privados (CPF, email): só o próprio usuário lê e escreve
+    // ── usuarios/{uid}: dados privados ─────────────────────────────
+    // Só o dono lê. Na criação (cadastro ou 1º login Google) grava só estes
+    // campos, com o aceite dos termos carimbado pelo servidor. Não há CPF
+    // aqui (fica só o hash protegido em cpfs) nem XP/moedas (ficam em
+    // ranking, onde cada mudança é validada). Depois de criado, o cliente
+    // não altera nem apaga: a exclusão é feita pelo servidor (/api/excluir-conta).
     match /usuarios/{uid} {
-      allow read, write: if dono(uid);
+      allow read: if dono(uid);
+
+      allow create: if dono(uid)
+        && request.resource.data.keys().hasOnly(
+          ["uid", "nome", "email", "dataCriacaoConta", "aceiteTermosEm", "versaoTermos", "loginGoogle"])
+        && request.resource.data.keys().hasAll(
+          ["uid", "nome", "email", "dataCriacaoConta", "aceiteTermosEm", "versaoTermos"])
+        && request.resource.data.uid == uid
+        && request.resource.data.nome is string
+        && request.resource.data.nome.size() >= 2
+        && request.resource.data.nome.size() <= 60
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.dataCriacaoConta == request.time
+        && request.resource.data.aceiteTermosEm == request.time
+        && request.resource.data.versaoTermos is string
+        && request.resource.data.versaoTermos.size() <= 20;
+
+      allow update, delete: if false;
     }
 
-    // ── Perfil público, ranking e loja ────────────────────────────
-    // ranking/{uid}: nome, xp, denuncias, moedas, itens (comprados),
-    // avatar, borda, tema, perfilPublico, ultimaDenuncia, ultimaCompra.
-    // Qualquer usuário logado lê; cada um só escreve o seu, e só por um
-    // destes caminhos: criar zerado, migrar entrada antiga, registrar uma
-    // denúncia, comprar um item ou personalizar o perfil.
+    // ── cpfs/{hmac}: ninguém acessa pelo cliente ───────────────────
+    match /cpfs/{hash} {
+      allow read, write: if false;
+    }
+
+    // ── ranking/{uid}: perfil público, ranking e loja ──────────────
+    // Campos: apelido, anonimo, xp, denuncias, moedas, itens (comprados),
+    // avatar, borda, tema, ultimaDenuncia, ultimaCompra. Nunca nome real,
+    // email ou CPF. Qualquer usuário logado lê; cada um só escreve o seu, e só
+    // por um destes caminhos: criar zerado, registrar uma denúncia, comprar
+    // um item ou personalizar o perfil. Isso impede o cliente de inventar
+    // XP, moedas ou nível.
     //
     // Catálogo: estes IDs, preços e XP mínimos repetem js/personalizacao.js.
 
@@ -58,12 +91,18 @@ service cloud.firestore {
     }
 
     function camposPerfil() {
-      return ["nome", "xp", "denuncias", "moedas", "itens", "avatar", "borda", "tema",
-              "perfilPublico", "ultimaDenuncia", "ultimaCompra"];
+      return ["apelido", "anonimo", "xp", "denuncias", "moedas", "itens", "avatar", "borda", "tema",
+              "ultimaDenuncia", "ultimaCompra"];
     }
 
-    function nomeValido(nome) {
-      return nome is string && nome.size() >= 2 && nome.size() <= 60;
+    // Vazio (usa "Protetor #1234") ou 3 a 20 caracteres, sem email (@)
+    // nem telefone (8 ou mais dígitos)
+    function apelidoValido(apelido) {
+      return apelido is string
+        && (apelido.size() == 0
+          || (apelido.size() >= 3 && apelido.size() <= 20
+            && !apelido.matches('.*@.*')
+            && !apelido.matches('.*[0-9][^0-9]*[0-9][^0-9]*[0-9][^0-9]*[0-9][^0-9]*[0-9][^0-9]*[0-9][^0-9]*[0-9][^0-9]*[0-9].*')));
     }
 
     // Item grátis, comprado ou liberado pelo XP
@@ -107,27 +146,12 @@ service cloud.firestore {
 
     function personalizaPerfil() {
       let depois = request.resource.data;
-      return alterou(["nome", "avatar", "borda", "tema", "perfilPublico"])
-        && nomeValido(depois.nome)
+      return alterou(["apelido", "anonimo", "avatar", "borda", "tema"])
+        && apelidoValido(depois.apelido)
+        && depois.anonimo is bool
         && podeUsar(depois.avatar, depois)
         && podeUsar(depois.borda, depois)
-        && podeUsar(depois.tema, depois)
-        && depois.perfilPublico is bool;
-    }
-
-    // Entradas criadas antes da loja: ganham os campos novos e
-    // 10 moedas por denúncia já feita; XP e denúncias não mudam
-    function migraEntradaAntiga() {
-      let depois = request.resource.data;
-      return !("moedas" in resource.data)
-        && depois.xp == resource.data.xp
-        && depois.denuncias == resource.data.denuncias
-        && depois.moedas == resource.data.denuncias * 10
-        && depois.itens == []
-        && depois.avatar == "iniciais"
-        && depois.borda == "sem-borda"
-        && depois.tema == "escuro"
-        && depois.perfilPublico == false;
+        && podeUsar(depois.tema, depois);
     }
 
     match /ranking/{uid} {
@@ -136,34 +160,39 @@ service cloud.firestore {
       // Sempre começa zerado (cadastro ou conta antiga sem entrada)
       allow create: if dono(uid)
         && request.resource.data.keys().hasOnly(camposPerfil())
-        && nomeValido(request.resource.data.nome)
+        && request.resource.data.apelido == ""
+        && request.resource.data.anonimo == false
         && request.resource.data.xp == 0
         && request.resource.data.denuncias == 0
         && request.resource.data.moedas == 0
         && request.resource.data.itens == []
         && request.resource.data.avatar == "iniciais"
         && request.resource.data.borda == "sem-borda"
-        && request.resource.data.tema == "escuro"
-        && request.resource.data.perfilPublico == false;
+        && request.resource.data.tema == "escuro";
 
       allow update: if dono(uid)
         && request.resource.data.keys().hasOnly(camposPerfil())
-        && (
-          migraEntradaAntiga()
-          || ("moedas" in resource.data
-            && (registraDenuncia(uid) || compraItem() || personalizaPerfil()))
-        );
+        && (registraDenuncia(uid) || compraItem() || personalizaPerfil());
+
+      // Apagado só pelo servidor (/api/excluir-conta)
+      allow delete: if false;
     }
 
-    // Denúncias: leitura para qualquer sessão (visitantes contam denúncias na
-    // consulta grátis); criação só com email confirmado e em nome próprio;
-    // imutáveis depois.
-    // O ID é "{uid}_{tipo}_{chave}" (ver js/alvos.js). Como criar por cima
-    // de um documento existente conta como update (proibido), cada usuário
-    // só consegue denunciar o mesmo telefone/link/email uma vez.
+    // ── denuncias/{uid}_{tipo}_{chave}: registro PRIVADO do autor ──
+    // Só o autor lê (usuario_uid). O ID é "{uid}_{tipo}_{chave}" (ver
+    // js/alvos.js): criar por cima de um documento existente conta como
+    // update (proibido), então cada usuário só denuncia o mesmo
+    // telefone/link/email uma vez, sem precisar de CPF.
+    // Criação só com email confirmado, em nome próprio, e junto com o relato
+    // público correspondente (relatoId). Imutável depois; apagada só pelo
+    // servidor ao excluir a conta.
     match /denuncias/{id} {
-      allow read: if autenticado();
+      allow read: if logado() && resource.data.usuario_uid == request.auth.uid;
+
       allow create: if verificado()
+        && request.resource.data.keys().hasOnly(
+          ["telefone", "link", "email", "tipo", "chave", "descricao", "data", "usuario_uid", "analise_ia", "relatoId"])
+        && request.resource.data.keys().hasAll(["tipo", "chave", "descricao", "data", "usuario_uid", "relatoId"])
         && request.resource.data.usuario_uid == request.auth.uid
         && request.resource.data.tipo in ["telefone", "link", "email"]
         && request.resource.data.chave is string
@@ -172,7 +201,39 @@ service cloud.firestore {
         && id == request.auth.uid + "_" + request.resource.data.tipo + "_" + request.resource.data.chave
         && request.resource.data.descricao is string
         && request.resource.data.descricao.size() >= 20
-        && request.resource.data.descricao.size() <= 2000;
+        && request.resource.data.descricao.size() <= 500
+        && request.resource.data.relatoId is string
+        && existsAfter(/databases/$(database)/documents/relatos/$(request.resource.data.relatoId));
+
+      allow update, delete: if false;
+    }
+
+    // ── relatos/{id}: versão PÚBLICA da denúncia, sem identificação ─
+    // Alimenta a consulta (contagem e relatos). Não tem uid nem nome, e o ID
+    // é aleatório, então ninguém descobre quem denunciou. Cada relato só
+    // nasce junto com a denúncia privada do mesmo usuário (que garante uma
+    // por alvo), por isso a contagem de relatos = usuários diferentes.
+    // Qualquer sessão lê (a consulta grátis usa sessão anônima).
+    match /relatos/{id} {
+      allow read: if autenticado();
+
+      allow create: if verificado()
+        && request.resource.data.keys().hasOnly(["tipo", "valor", "chave", "descricao", "data"])
+        && request.resource.data.tipo in ["telefone", "link", "email"]
+        && request.resource.data.valor is string
+        && request.resource.data.valor.size() > 0
+        && request.resource.data.valor.size() <= 300
+        && request.resource.data.chave is string
+        && request.resource.data.chave.size() > 0
+        && request.resource.data.chave.size() <= 300
+        && request.resource.data.descricao is string
+        && request.resource.data.descricao.size() >= 20
+        && request.resource.data.descricao.size() <= 500
+        && !exists(/databases/$(database)/documents/denuncias/$(request.auth.uid + "_" + request.resource.data.tipo + "_" + request.resource.data.chave))
+        && existsAfter(/databases/$(database)/documents/denuncias/$(request.auth.uid + "_" + request.resource.data.tipo + "_" + request.resource.data.chave))
+        && getAfter(/databases/$(database)/documents/denuncias/$(request.auth.uid + "_" + request.resource.data.tipo + "_" + request.resource.data.chave)).data.relatoId == id
+        && getAfter(/databases/$(database)/documents/denuncias/$(request.auth.uid + "_" + request.resource.data.tipo + "_" + request.resource.data.chave)).data.descricao == request.resource.data.descricao;
+
       allow update, delete: if false;
     }
   }

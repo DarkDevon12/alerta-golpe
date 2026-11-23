@@ -9,12 +9,13 @@ import {
   increment
 } from "./firebase.js";
 import { usuarioPronto } from "./layout.js";
-import { XP_POR_DENUNCIA, obterPerfil, sincronizarRanking } from "./usuarios.js";
+import { XP_POR_DENUNCIA, sincronizarRanking } from "./usuarios.js";
 import { MOEDAS_POR_DENUNCIA } from "./personalizacao.js";
 import { escapeHtml } from "./util.js";
-import { chaveAlvo, idDenuncia } from "./alvos.js";
+import { chaveAlvo, idDenuncia, valorPublico } from "./alvos.js";
 
 const MIN_DESCRICAO = 20;
+const MAX_DESCRICAO = 500;
 
 const form = document.getElementById("form-denuncia");
 const radiosTipo = form.querySelectorAll('input[name="tipo"]');
@@ -98,7 +99,7 @@ async function carregarMinhasDenuncias() {
     const snap = await getDocs(query(collection(db, "denuncias"), where("usuario_uid", "==", user.uid)));
     snap.forEach((d) => {
       const { tipo } = d.data();
-      const chave = chaveAlvo(tipo, d.data()[tipo]);
+      const chave = d.data().chave || chaveAlvo(tipo, d.data()[tipo]);
       if (chave) minhasDenuncias.add(`${tipo}:${chave}`);
     });
     atualizarEstado();
@@ -230,8 +231,9 @@ function atualizarEstado() {
   const dados = lerFormulario();
   const tamanho = dados.descricao.length;
 
-  charCount.textContent = tamanho >= MIN_DESCRICAO ? `${tamanho} caracteres` : `${tamanho}/${MIN_DESCRICAO}`;
+  charCount.textContent = `${tamanho}/${MAX_DESCRICAO}`;
   charCount.classList.toggle("ok", tamanho >= MIN_DESCRICAO);
+  charCount.title = tamanho >= MIN_DESCRICAO ? "" : `Mínimo de ${MIN_DESCRICAO} caracteres`;
 
   btnAnalisar.disabled = !formularioCompleto(dados);
 
@@ -302,17 +304,16 @@ form.addEventListener("submit", async (e) => {
   btnEnviar.textContent = "Enviando…";
 
   try {
-    const perfil = await obterPerfil(user.uid);
-    const nome = perfil?.nome || user.displayName || "Usuário";
-
-    // Contas antigas ganham/migram a entrada do ranking antes de pontuar
+    // Contas antigas ganham a entrada do ranking antes de pontuar
     await sincronizarRanking(user.uid);
 
     const batch = writeBatch(db);
     const chave = chaveAlvo(tipo, valor);
     const idDoc = idDenuncia(user.uid, tipo, chave);
+    const relatoRef = doc(collection(db, "relatos")); // ID aleatório: não revela quem denunciou
 
-    // ID fixo por usuário + alvo: as regras recusam uma segunda denúncia igual
+    // Registro PRIVADO (só você lê). ID fixo por usuário + alvo: as regras
+    // recusam uma segunda denúncia igual, então não há XP nem moedas de novo
     batch.set(doc(db, "denuncias", idDoc), {
       [tipo]: valor,
       tipo,
@@ -320,7 +321,7 @@ form.addEventListener("submit", async (e) => {
       descricao,
       data: new Date(),
       usuario_uid: user.uid,
-      usuario_nome: nome,
+      relatoId: relatoRef.id,
       analise_ia: ultimaAnalise
         ? {
             risco: ultimaAnalise.risco,
@@ -332,10 +333,14 @@ form.addEventListener("submit", async (e) => {
         : null
     });
 
-    batch.set(doc(db, "usuarios", user.uid), {
-      xp: increment(XP_POR_DENUNCIA),
-      denuncias: increment(1)
-    }, { merge: true });
+    // Versão PÚBLICA: alvo normalizado e relato, sem uid nem nome
+    batch.set(relatoRef, {
+      tipo,
+      valor: valorPublico(tipo, valor),
+      chave,
+      descricao,
+      data: new Date()
+    });
 
     // Perfil público: as regras só aceitam +3 XP / +10 moedas se esta
     // denúncia (ultimaDenuncia) for criada neste mesmo batch
@@ -354,7 +359,7 @@ form.addEventListener("submit", async (e) => {
   } catch (error) {
     console.error("Erro ao enviar denúncia:", error);
     alert(error.code === "permission-denied"
-      ? "Não foi possível enviar: você já denunciou este alvo ou ainda não confirmou seu email."
+      ? "Não foi possível enviar: você já denunciou este alvo (não há XP nem moedas de novo) ou ainda não confirmou seu email."
       : "Erro ao enviar denúncia: " + error.message);
     btnEnviar.disabled = false;
     btnEnviar.textContent = "Enviar denúncia";

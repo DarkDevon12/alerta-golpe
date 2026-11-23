@@ -49,7 +49,7 @@
         <section class="etapa">
           <div class="etapa-titulo">
             <label for="nome">Qual é o seu nome?</label>
-            <p>É assim que você vai aparecer no ranking.</p>
+            <p>Seu nome fica privado. No ranking você aparece com um apelido (ou como "Protetor #1234"), que pode mudar no perfil.</p>
           </div>
           <div class="form-group">
             <input type="text" id="nome" placeholder="Seu nome completo" autocomplete="name">
@@ -59,7 +59,7 @@
         <section class="etapa" hidden>
           <div class="etapa-titulo">
             <label for="cpf">Qual é o seu CPF?</label>
-            <p>Usado só para validar sua conta. Ninguém mais vê.</p>
+            <p>Usamos o CPF apenas para evitar contas duplicadas. Ele é armazenado de forma protegida e não aparece para ninguém.</p>
           </div>
           <div class="form-group">
             <input type="text" id="cpf" placeholder="000.000.000-00" inputmode="numeric" maxlength="14">
@@ -105,6 +105,11 @@
           </div>
         </section>
 
+        <label class="aceite-termos" id="aceite-bloco">
+          <input type="checkbox" id="aceite-termos">
+          <span>Li e aceito os <a href="termos.html" target="_blank" rel="noopener">Termos de Uso</a> e a <a href="privacidade.html" target="_blank" rel="noopener">Política de Privacidade</a>.</span>
+        </label>
+
         <p id="erro-etapa" class="auth-msg erro" role="alert" hidden></p>
 
         <div class="etapa-acoes">
@@ -129,6 +134,7 @@
 
     <div class="auth-footer">
       <p>AlertaGolpe © 2024 — Combatendo golpes digitais</p>
+      <p class="auth-footer-links"><a href="termos.html">Termos de Uso</a> · <a href="privacidade.html">Política de Privacidade</a></p>
     </div>
 
   </div>

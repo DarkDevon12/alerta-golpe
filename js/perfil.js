@@ -9,12 +9,17 @@ import {
   where,
   getDocs,
   updateDoc,
-  writeBatch,
   increment,
-  arrayUnion
+  arrayUnion,
+  auth,
+  signOut,
+  googleProvider,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup
 } from "./firebase.js";
 import { usuarioPronto, perfilPronto, atualizarMenuPerfil } from "./layout.js";
-import { obterPerfilPublico, XP_POR_DENUNCIA, TAMANHO_MAX_NOME } from "./usuarios.js";
+import { obterPerfilPublico, XP_POR_DENUNCIA } from "./usuarios.js";
 import {
   AVATARES,
   BORDAS,
@@ -27,7 +32,7 @@ import {
   obterItem,
   aplicarTema
 } from "./personalizacao.js";
-import { escapeHtml, nivelPorXp, NIVEIS } from "./util.js";
+import { escapeHtml, nivelPorXp, NIVEIS, nomePublico, erroApelido } from "./util.js";
 
 const ICONES = {
   editar: '<svg class="icon" viewBox="0 0 24 24"><path d="M21.17 6.81a1 1 0 0 0-3.99-3.99L3.84 16.17a2 2 0 0 0-.5.83l-1.32 4.35a.5.5 0 0 0 .62.62l4.35-1.32a2 2 0 0 0 .83-.5z"/></svg>',
@@ -72,7 +77,7 @@ const previaTema = document.getElementById("previa-tema");
 let uid = null;
 let ehMeu = false;
 let perfil = null;
-let denuncias = null; // null = não disponível (perfil privado)
+let denuncias = null; // só carregadas no perfil próprio (são privadas)
 
 function formatarNumero(n) {
   return (n || 0).toLocaleString("pt-BR");
@@ -81,10 +86,6 @@ function formatarNumero(n) {
 function formatarData(data) {
   const d = data?.toDate ? data.toDate() : null;
   return d ? d.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", year: "numeric" }) : "";
-}
-
-function primeiroNome(nome) {
-  return String(nome || "").trim().split(/\s+/)[0] || "Esta pessoa";
 }
 
 // ── ABAS ────────────────────────────────────────────────
@@ -122,11 +123,11 @@ function renderCabecalho() {
       <span class="eyebrow">${ehMeu ? "Meu perfil" : "Perfil da comunidade"}</span>
       <div class="perfil-nome-linha">
         <h1 id="perfil-nome"></h1>
-        ${ehMeu ? `<button type="button" class="btn-icone" id="btn-editar-nome" aria-label="Editar nome">${ICONES.editar}</button>` : ""}
+        ${ehMeu ? `<button type="button" class="btn-icone" id="btn-editar-nome" aria-label="Editar apelido">${ICONES.editar}</button>` : ""}
       </div>
       ${ehMeu ? `
       <form id="form-nome" class="perfil-nome-form" hidden>
-        <input type="text" id="input-nome" class="input" maxlength="${TAMANHO_MAX_NOME}" aria-label="Seu nome" autocomplete="name">
+        <input type="text" id="input-nome" class="input" maxlength="20" placeholder="Apelido (3 a 20 caracteres)" aria-label="Seu apelido" autocomplete="off">
         <button type="submit" class="btn btn-primary">Salvar</button>
         <button type="button" class="btn btn-secondary" id="btn-cancelar-nome">Cancelar</button>
       </form>` : ""}
@@ -138,7 +139,7 @@ function renderCabecalho() {
       ${ehMeu ? `<div class="stat-moedas"><b>${ICONE_MOEDA}${formatarNumero(perfil.moedas)}</b><span>moedas</span></div>` : ""}
     </div>`;
 
-  document.getElementById("perfil-nome").textContent = perfil.nome;
+  document.getElementById("perfil-nome").textContent = nomePublico(perfil);
   if (ehMeu) ligarEdicaoNome();
 }
 
@@ -151,7 +152,7 @@ function ligarEdicaoNome() {
     form.hidden = !sim;
     linha.hidden = sim;
     if (sim) {
-      input.value = perfil.nome;
+      input.value = perfil.apelido || "";
       input.focus();
       input.select();
     }
@@ -162,26 +163,23 @@ function ligarEdicaoNome() {
 
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
-    const nome = input.value.trim().replace(/\s+/g, " ");
-    if (nome.length < 2) {
-      alert("O nome precisa ter pelo menos 2 letras.");
+    const apelido = input.value.trim().replace(/\s+/g, " ");
+
+    const erro = erroApelido(apelido);
+    if (erro) {
+      alert(erro);
       return;
     }
-    if (nome === perfil.nome) return editar(false);
+    if (apelido === (perfil.apelido || "")) return editar(false);
 
     try {
-      // Nome privado e público mudam juntos
-      const batch = writeBatch(db);
-      batch.update(doc(db, "usuarios", uid), { nome });
-      batch.update(doc(db, "ranking", uid), { nome });
-      await batch.commit();
-
-      perfil.nome = nome;
+      await updateDoc(doc(db, "ranking", uid), { apelido });
+      perfil.apelido = apelido;
       renderCabecalho();
       atualizarMenuPerfil(perfil);
     } catch (error) {
-      console.error("Erro ao salvar nome:", error);
-      alert("Não foi possível salvar o nome: " + error.message);
+      console.error("Erro ao salvar apelido:", error);
+      alert("Não foi possível salvar o apelido: " + error.message);
     }
   });
 }
@@ -259,25 +257,37 @@ function renderGeral() {
     <section class="card perfil-bloco privacidade">
       <div>
         <h2>Privacidade</h2>
-        <p>Quando ativado, quem abrir seu perfil pelo ranking vê a lista das suas denúncias e os relatos. Seu email e CPF nunca aparecem.</p>
+        <p>Outras pessoas só veem seu apelido, nível e XP. Seu nome, email e CPF nunca aparecem, nem a lista das suas denúncias. Sem apelido, você aparece como <b>${escapeHtml(nomePublico({ uid }))}</b>.</p>
       </div>
       <label class="interruptor">
-        <input type="checkbox" id="chk-publico" ${perfil.perfilPublico ? "checked" : ""}>
+        <input type="checkbox" id="chk-anonimo" ${perfil.anonimo ? "checked" : ""}>
         <span class="interruptor-trilho" aria-hidden="true"></span>
-        <span>Mostrar minhas denúncias no perfil</span>
+        <span>Aparecer como anônimo no ranking</span>
       </label>
+    </section>
+
+    <section class="card perfil-bloco privacidade">
+      <div>
+        <h2>Seus dados</h2>
+        <p>Veja como tratamos seus dados na <a href="privacidade.html">Política de Privacidade</a>. Para acessar, corrigir ou levar seus dados, fale com o contato indicado nela. Excluir a conta apaga seus dados pessoais e não pode ser desfeito.</p>
+      </div>
+      <button type="button" class="btn btn-perigo" id="btn-excluir-conta">Excluir minha conta</button>
     </section>` : ""}`;
 
-  document.getElementById("chk-publico")?.addEventListener("change", async (e) => {
+  document.getElementById("chk-anonimo")?.addEventListener("change", async (e) => {
     const marcado = e.target.checked;
     try {
-      await updateDoc(doc(db, "ranking", uid), { perfilPublico: marcado });
-      perfil.perfilPublico = marcado;
+      await updateDoc(doc(db, "ranking", uid), { anonimo: marcado });
+      perfil.anonimo = marcado;
+      renderCabecalho();
+      atualizarMenuPerfil(perfil);
     } catch (error) {
       e.target.checked = !marcado;
       alert("Não foi possível salvar: " + error.message);
     }
   });
+
+  document.getElementById("btn-excluir-conta")?.addEventListener("click", abrirModalExclusao);
 }
 
 // ── LOJA ────────────────────────────────────────────────
@@ -411,20 +421,11 @@ async function carregarDenuncias() {
 }
 
 function renderDenuncias() {
-  if (denuncias === null) {
-    abaDenuncias.innerHTML = `
-      <div class="card vazio-perfil">
-        ${ICONES.cadeado}
-        <p>${escapeHtml(primeiroNome(perfil.nome))} mantém as denúncias privadas.</p>
-      </div>`;
-    return;
-  }
-
   if (denuncias.length === 0) {
     abaDenuncias.innerHTML = `
       <div class="card vazio-perfil">
-        <p>${ehMeu ? "Você ainda não fez nenhuma denúncia." : "Nenhuma denúncia ainda."}</p>
-        ${ehMeu ? `<a href="denunciar.html" class="btn btn-primary">Fazer a primeira denúncia</a>` : ""}
+        <p>Você ainda não fez nenhuma denúncia.</p>
+        <a href="denunciar.html" class="btn btn-primary">Fazer a primeira denúncia</a>
       </div>`;
     return;
   }
@@ -454,6 +455,103 @@ function renderDenuncias() {
     </div>`;
 }
 
+// ── EXCLUIR CONTA ───────────────────────────────────────
+
+const ERROS_EXCLUSAO = {
+  "auth/wrong-password": "Senha incorreta.",
+  "auth/invalid-credential": "Senha incorreta.",
+  "auth/too-many-requests": "Muitas tentativas. Aguarde alguns minutos.",
+  "auth/popup-closed-by-user": "Confirmação cancelada."
+};
+
+// O servidor só apaga se o login for recente: reconfirma a identidade
+async function reautenticar(senha) {
+  const user = auth.currentUser;
+  if (user.providerData.some((p) => p.providerId === "password")) {
+    await reauthenticateWithCredential(user, EmailAuthProvider.credential(user.email, senha));
+  } else {
+    await reauthenticateWithPopup(user, googleProvider);
+  }
+}
+
+async function chamarExclusao() {
+  const resposta = await fetch("/api/excluir-conta", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${await auth.currentUser.getIdToken(true)}` }
+  });
+  const corpo = await resposta.json().catch(() => ({}));
+  if (!resposta.ok) {
+    const erro = new Error(corpo.erro || `Erro ${resposta.status} no servidor.`);
+    erro.codigo = corpo.codigo;
+    throw erro;
+  }
+}
+
+function abrirModalExclusao() {
+  const comSenha = auth.currentUser.providerData.some((p) => p.providerId === "password");
+  const fundo = document.createElement("div");
+  fundo.className = "modal-fundo";
+  fundo.innerHTML = `
+    <form class="modal card" role="dialog" aria-modal="true" aria-labelledby="modal-excluir-titulo">
+      <h2 id="modal-excluir-titulo">Excluir minha conta</h2>
+      <p>Isso apaga seu perfil, ranking, XP, moedas, itens e suas denúncias pessoais. Os relatos que você enviou já são anônimos e continuam ajudando a comunidade. <b>Não dá para desfazer.</b></p>
+      <label class="field-label" for="excluir-confirma">Digite <b>EXCLUIR</b> para confirmar</label>
+      <input class="input" id="excluir-confirma" autocomplete="off">
+      ${comSenha ? `
+      <label class="field-label" for="excluir-senha">Sua senha</label>
+      <input class="input" id="excluir-senha" type="password" autocomplete="current-password">` : `<p class="field-hint">Você vai confirmar com sua conta Google.</p>`}
+      <p class="field-erro" id="excluir-erro" role="alert" hidden></p>
+      <div class="form-actions">
+        <button type="button" class="btn btn-secondary" id="excluir-cancelar">Cancelar</button>
+        <button type="submit" class="btn btn-perigo" id="excluir-ok" disabled>Excluir definitivamente</button>
+      </div>
+    </form>`;
+  document.body.appendChild(fundo);
+
+  const form = fundo.querySelector("form");
+  const confirma = fundo.querySelector("#excluir-confirma");
+  const senha = fundo.querySelector("#excluir-senha");
+  const ok = fundo.querySelector("#excluir-ok");
+  const erroEl = fundo.querySelector("#excluir-erro");
+  const fechar = () => fundo.remove();
+  const mostrarErro = (m) => { erroEl.textContent = m; erroEl.hidden = !m; };
+
+  const atualizar = () => { ok.disabled = confirma.value.trim() !== "EXCLUIR" || Boolean(senha && !senha.value); };
+  confirma.addEventListener("input", atualizar);
+  senha?.addEventListener("input", atualizar);
+  fundo.querySelector("#excluir-cancelar").addEventListener("click", fechar);
+  fundo.addEventListener("click", (e) => { if (e.target === fundo) fechar(); });
+  confirma.focus();
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    ok.disabled = true;
+    ok.textContent = "Excluindo…";
+    mostrarErro("");
+
+    try {
+      try {
+        await chamarExclusao();
+      } catch (erro) {
+        if (erro.codigo !== "requer-login-recente") throw erro;
+        await reautenticar(senha?.value || "");
+        await chamarExclusao();
+      }
+
+      await signOut(auth).catch(() => {});
+      alert("Sua conta foi excluída.");
+      window.location.replace("index.html");
+
+    } catch (erro) {
+      console.error("Erro ao excluir conta:", erro);
+      // O login só é removido depois dos dados e a exclusão pode ser repetida: nada fica pela metade
+      mostrarErro((ERROS_EXCLUSAO[erro.code] || erro.message) + " Sua conta continua ativa; tente novamente.");
+      ok.textContent = "Excluir definitivamente";
+      atualizar();
+    }
+  });
+}
+
 // ── INÍCIO ──────────────────────────────────────────────
 
 async function iniciar() {
@@ -471,19 +569,23 @@ async function iniciar() {
       return;
     }
     // Perfis ainda não migrados para a loja ficam com os valores padrão
-    perfil = { moedas: 0, xp: 0, denuncias: 0, ...PERFIL_PADRAO, ...dados };
+    perfil = { moedas: 0, xp: 0, denuncias: 0, ...PERFIL_PADRAO, ...dados, uid };
 
-    document.title = `${ehMeu ? "Meu perfil" : perfil.nome} — AlertaGolpe`;
+    document.title = `${ehMeu ? "Meu perfil" : nomePublico(perfil)} — AlertaGolpe`;
+    // Loja e denúncias são privadas: só aparecem no próprio perfil
     document.getElementById("tab-loja").hidden = !ehMeu;
+    document.getElementById("tab-denuncias").hidden = !ehMeu;
     if (ehMeu) document.getElementById("tab-denuncias").textContent = "Minhas denúncias";
 
     renderCabecalho();
 
-    denuncias = ehMeu || perfil.perfilPublico ? await carregarDenuncias() : null;
+    denuncias = ehMeu ? await carregarDenuncias() : null;
 
     renderGeral();
-    if (ehMeu) renderLoja();
-    renderDenuncias();
+    if (ehMeu) {
+      renderLoja();
+      renderDenuncias();
+    }
     abrirAba(location.hash.slice(1));
 
   } catch (error) {

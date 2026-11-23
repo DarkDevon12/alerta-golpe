@@ -11,7 +11,33 @@ const TIMEOUT_MS = 20000;
 const MODELO_PADRAO = "gemini-flash-lite-latest";
 const MODELO_RESERVA = "gemini-3.1-flash-lite";
 
-const LIMITES = { valor: 300, descricao: 2000 };
+const LIMITES = { valor: 300, descricao: 500 };
+
+// Limite de uso por usuário: no máximo N análises por minuto.
+// Fica na memória da instância (na Vercel cada instância tem a sua contagem),
+// o que basta para frear abuso simples; para um limite global use Redis/Upstash.
+const MAX_ANALISES_POR_MINUTO = 5;
+const JANELA_MS = 60_000;
+const usoPorUsuario = new Map();
+
+function verificarLimiteDeUso(uid) {
+  const agora = Date.now();
+  const recentes = (usoPorUsuario.get(uid) || []).filter((t) => agora - t < JANELA_MS);
+
+  if (recentes.length >= MAX_ANALISES_POR_MINUTO) {
+    usoPorUsuario.set(uid, recentes);
+    throw new ErroHttp(429, "Muitas análises seguidas. Aguarde um minuto e tente de novo.");
+  }
+  recentes.push(agora);
+  usoPorUsuario.set(uid, recentes);
+
+  // Evita crescer sem limite
+  if (usoPorUsuario.size > 5000) {
+    for (const [chave, tempos] of usoPorUsuario) {
+      if (tempos.every((t) => agora - t >= JANELA_MS)) usoPorUsuario.delete(chave);
+    }
+  }
+}
 
 const ROTULOS = { telefone: "Telefone", link: "Link", email: "Email do remetente" };
 
@@ -77,6 +103,7 @@ async function verificarUsuario(authHeader, firebaseApiKey) {
   if (!users[0].emailVerified) {
     throw new ErroHttp(403, "Confirme seu email para usar a análise.");
   }
+  return users[0].localId;
 }
 
 function validarEntrada(corpo) {
@@ -202,8 +229,9 @@ export async function processarAnalise(req, env) {
     if (!env.GEMINI_API_KEY) throw new ErroHttp(500, "GEMINI_API_KEY não configurada no servidor (.env).");
     if (!env.VITE_FIREBASE_API_KEY) throw new ErroHttp(500, "VITE_FIREBASE_API_KEY não configurada no servidor (.env).");
 
-    await verificarUsuario(req.headers.authorization, env.VITE_FIREBASE_API_KEY);
+    const uid = await verificarUsuario(req.headers.authorization, env.VITE_FIREBASE_API_KEY);
     const entrada = validarEntrada(req.body);
+    verificarLimiteDeUso(uid);
 
     const analise = await chamarGemini(entrada, {
       apiKey: env.GEMINI_API_KEY,

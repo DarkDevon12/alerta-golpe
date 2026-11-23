@@ -8,7 +8,7 @@ import {
 } from "./firebase.js";
 import { usuarioPronto } from "./layout.js";
 import { sincronizarRanking } from "./usuarios.js";
-import { escapeHtml, nivelPorXp } from "./util.js";
+import { escapeHtml, nivelPorXp, nomePublico } from "./util.js";
 import { renderAvatar } from "./personalizacao.js";
 
 const TOP = 100;
@@ -32,7 +32,7 @@ function renderPodio(top3) {
   podio.innerHTML = [top3[1], top3[0], top3[2]].map((m) => `
     <a href="${linkPerfil(m)}" class="card podio-item p${m.posicao}">
       ${renderAvatar(m)}
-      <div class="podio-nome" title="${escapeHtml(m.nome)}">${escapeHtml(m.nome)}</div>
+      <div class="podio-nome" title="${escapeHtml(nomePublico(m))}">${escapeHtml(nomePublico(m))}</div>
       <div class="podio-xp">${formatarNumero(m.xp)} XP · ${nivelPorXp(m.xp).nome}</div>
       <div class="podio-base">${m.posicao}</div>
     </a>
@@ -54,7 +54,7 @@ function renderLista(membros, meuUid) {
       <div class="placar-membro">
         ${renderAvatar(m)}
         <div>
-          <a href="${linkPerfil(m)}" class="placar-nome"><strong>${escapeHtml(m.nome)}${m.uid === meuUid ? "<small>você</small>" : ""}</strong></a>
+          <a href="${linkPerfil(m)}" class="placar-nome"><strong>${escapeHtml(nomePublico(m))}${m.uid === meuUid ? "<small>você</small>" : ""}</strong></a>
           <span class="nivel">${nivelPorXp(m.xp).nome}</span>
         </div>
       </div>
@@ -80,7 +80,7 @@ function renderMeuCard(eu, posicao) {
     ${renderAvatar(eu)}
     <div>
       <div class="meu-pos">${posicao ? `Sua posição: <b>#${posicao}</b>` : `Fora do top ${TOP}`}</div>
-      <div class="meu-nome">${escapeHtml(eu.nome)} <span class="nivel">${nivel.nome}</span></div>
+      <div class="meu-nome">${escapeHtml(nomePublico(eu))} <span class="nivel">${nivel.nome}</span></div>
       <div class="progresso">
         <div class="progresso-barra"><span style="width:${progresso}%"></span></div>
         <small>${textoProgresso}</small>
@@ -109,7 +109,8 @@ async function carregarRanking() {
     const membros = snapshot.docs.map((d, i) => ({
       uid: d.id,
       posicao: i + 1,
-      nome: d.data().nome || "Usuário",
+      apelido: d.data().apelido,
+      anonimo: d.data().anonimo,
       xp: d.data().xp || 0,
       denuncias: d.data().denuncias || 0,
       avatar: d.data().avatar,

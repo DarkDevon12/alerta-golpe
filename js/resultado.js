@@ -18,12 +18,12 @@ const ROTULOS = {
  * Assim o site verdadeiro não é marcado como golpe por causa de um falso.
  */
 function separarDenuncias(todas, tipo, valor) {
-  const doTipo = todas.filter((d) => d[tipo]);
+  const doTipo = todas.filter((d) => d.tipo === tipo);
   const exatas = [];
   const parecidas = [];
 
   if (tipo === "telefone") {
-    exatas.push(...doTipo.filter((d) => telefonesBatem(d.telefone, valor)));
+    exatas.push(...doTipo.filter((d) => telefonesBatem(d.valor, valor)));
     return { exatas, parecidas };
   }
 
@@ -32,7 +32,7 @@ function separarDenuncias(todas, tipo, valor) {
   if (!alvo) return { exatas, parecidas };
 
   doTipo.forEach((d) => {
-    const outro = analisar(d[tipo]);
+    const outro = analisar(d.valor);
     if (!outro) return;
 
     if (outro.chave === alvo.chave) {
@@ -87,7 +87,7 @@ async function carregarResultados() {
     // As regras do Firestore exigem uma sessão; o visitante ganha uma anônima
     if (!user) await signInAnonymously(auth);
 
-    const snapshot = await getDocs(collection(db, "denuncias"));
+    const snapshot = await getDocs(collection(db, "relatos"));
     const todas = snapshot.docs.map((d) => d.data());
 
     ({ exatas: filtradas, parecidas } = separarDenuncias(todas, tipo, valorBuscado));

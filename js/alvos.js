@@ -159,7 +159,14 @@ export function chaveAlvo(tipo, valor) {
   return null;
 }
 
-// ID do documento da denúncia: um por usuário e alvo
+// Valor normalizado que vai para o relato público: só dígitos (telefone),
+// domínio em minúsculas (link) ou email em minúsculas
+export function valorPublico(tipo, valor) {
+  if (tipo === "link") return analisarLink(valor)?.exibicao || "";
+  return chaveAlvo(tipo, valor) || "";
+}
+
+// ID do documento da denúncia (privada): um por usuário e alvo
 export function idDenuncia(uid, tipo, chave) {
   return `${uid}_${tipo}_${chave}`;
 }

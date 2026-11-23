@@ -17,7 +17,10 @@ import {
   signInWithPopup,
   signInAnonymously,
   sendPasswordResetEmail,
-  sendEmailVerification
+  sendEmailVerification,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
+  EmailAuthProvider
 } from "firebase/auth";
 import {
   getFirestore,
@@ -84,5 +87,8 @@ export {
   signInAnonymously,
   sendPasswordResetEmail,
   sendEmailVerification,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
+  EmailAuthProvider,
   googleProvider
 };

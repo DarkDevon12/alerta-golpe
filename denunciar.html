@@ -82,13 +82,13 @@
 
         <div class="field">
           <label for="input-descricao" class="field-label">
-            Descreva o que aconteceu <span class="field-hint">— mínimo 20 caracteres</span>
+            Descreva o que aconteceu <span class="field-hint">— de 20 a 500 caracteres</span>
           </label>
-          <textarea id="input-descricao" class="input" rows="6" maxlength="2000"
+          <textarea id="input-descricao" class="input" rows="6" maxlength="500"
             placeholder="Quando recebeu, o que a pessoa disse, o que pediu (Pix, código, dados)…"></textarea>
           <div class="field-meta">
-            <span>Não inclua seus dados pessoais.</span>
-            <span id="char-count">0/20</span>
+            <span>Não inclua dados pessoais seus ou de terceiros na descrição (CPF, endereço, e-mail pessoal etc.).</span>
+            <span id="char-count">0/500</span>
           </div>
         </div>
 
@@ -99,7 +99,7 @@
           </button>
           <button type="submit" class="btn btn-primary" id="btn-enviar">Enviar denúncia</button>
         </div>
-        <p class="form-note">Cada denúncia enviada vale 3 XP no ranking e 10 moedas para gastar na loja do seu perfil.</p>
+        <p class="form-note">Seu relato fica público e anônimo para a comunidade, e o texto é enviado ao Google Gemini para a análise de risco (veja a <a href="privacidade.html">Política de Privacidade</a>). Cada denúncia enviada vale 3 XP no ranking e 10 moedas para gastar na loja do seu perfil.</p>
 
       </form>
 
@@ -114,6 +114,11 @@
 
     </div>
   </main>
+
+  <footer class="site-footer">
+    <p>AlertaGolpe © 2024 — Combatendo golpes digitais</p>
+    <p><a href="termos.html">Termos de Uso</a> · <a href="privacidade.html">Política de Privacidade</a></p>
+  </footer>
 
   <script type="module" src="js/layout.js"></script>
   <script type="module" src="js/denuncia.js"></script>

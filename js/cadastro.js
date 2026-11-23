@@ -3,6 +3,7 @@ import {
   createUserWithEmailAndPassword
 } from "./firebase.js";
 import { criarPerfil } from "./usuarios.js";
+import { validarCPF, formatarCPF } from "./cpf.js";
 import { ativarOlhoSenha } from "./olho-senha.js";
 import { enviarEmailVerificacao } from "./verificacao-email.js";
 
@@ -19,32 +20,6 @@ function validarSenha(senha) {
   };
 
   return requisitos;
-}
-
-// Valida CPF pelos dígitos verificadores
-function validarCPF(cpf) {
-  const d = cpf.replace(/\D/g, "");
-
-  if (d.length !== 11 || /^(\d)\1{10}$/.test(d)) {
-    return false;
-  }
-
-  const digito = (tamanho) => {
-    let soma = 0;
-    for (let i = 0; i < tamanho; i++) soma += Number(d[i]) * (tamanho + 1 - i);
-    const resto = (soma * 10) % 11;
-    return resto === 10 ? 0 : resto;
-  };
-
-  return digito(9) === Number(d[9]) && digito(10) === Number(d[10]);
-}
-
-function formatarCPF(cpf) {
-  const cpfLimpo = cpf.replace(/\D/g, "");
-  if (cpfLimpo.length <= 11) {
-    return cpfLimpo.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-  }
-  return cpf;
 }
 
 const campo = (id) => document.getElementById(id);
@@ -86,6 +61,7 @@ const VALIDACOES = [
     const senha = campo("senha").value;
     if (!Object.values(validarSenha(senha)).every(r => r)) return "A senha não atende a todos os requisitos.";
     if (senha !== campo("confirmar-senha").value) return "As senhas não coincidem.";
+    if (!campo("aceite-termos").checked) return "Marque que leu e aceita os Termos de Uso e a Política de Privacidade.";
     return null;
   }
 ];
@@ -111,10 +87,18 @@ function irParaEtapa(indice) {
   campo("cadastro-google").hidden = indice !== 0;
   btnVoltar.hidden = indice === 0;
   btnAvancar.textContent = ultima ? "Criar conta" : "Continuar";
+  campo("aceite-bloco").hidden = !ultima;
+  atualizarBotao();
 
   mostrarErro(null);
   etapas[indice].querySelector("input")?.focus();
 }
+
+// Na última etapa, "Criar conta" só fica ativo depois do aceite
+function atualizarBotao() {
+  btnAvancar.disabled = etapaAtual === etapas.length - 1 && !campo("aceite-termos").checked;
+}
+campo("aceite-termos").addEventListener("change", atualizarBotao);
 
 btnVoltar.addEventListener("click", () => irParaEtapa(etapaAtual - 1));
 
@@ -150,8 +134,17 @@ async function fazerCadastro() {
     const userCredential = await createUserWithEmailAndPassword(auth, email, senha);
     const uid = userCredential.user.uid;
 
-    // Salva dados do usuário no Firestore
-    await criarPerfil(uid, { nome, cpf, email });
+    try {
+      // O servidor guarda só um HMAC do CPF (uma conta por CPF); o CPF não é gravado
+      await registrarCpf(userCredential.user, cpf);
+
+      // Salva dados do usuário no Firestore, com o aceite dos termos
+      await criarPerfil(uid, { nome, email });
+    } catch (erro) {
+      // Sem desfazer, ficaria uma conta sem perfil: remove o login recém-criado
+      await userCredential.user.delete().catch(() => {});
+      throw erro;
+    }
 
     // A conta só funciona depois de confirmar o email
     await enviarEmailVerificacao(userCredential.user)
@@ -163,8 +156,10 @@ async function fazerCadastro() {
   } catch (error) {
     console.error("Erro ao criar conta:", error.code);
 
-    // Erros de email voltam para a etapa do email
-    if (error.code === "auth/email-already-in-use") {
+    if (error.codigo === "cpf-duplicado") {
+      irParaEtapa(1);
+      mostrarErro(error.message);
+    } else if (error.code === "auth/email-already-in-use") {
       irParaEtapa(2);
       mostrarErro("Este email já está registrado. Use outro ou faça login.");
     } else if (error.code === "auth/invalid-email") {
@@ -176,9 +171,26 @@ async function fazerCadastro() {
       mostrarErro("Erro ao criar conta: " + error.message);
     }
   } finally {
-    btnAvancar.disabled = false;
     btnVoltar.disabled = false;
+    atualizarBotao();
   }
+}
+
+async function registrarCpf(user, cpf) {
+  const resposta = await fetch("/api/registrar-cpf", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${await user.getIdToken()}`
+    },
+    body: JSON.stringify({ cpf })
+  });
+  if (resposta.ok) return;
+
+  const corpo = await resposta.json().catch(() => ({}));
+  const erro = new Error(corpo.erro || "Não foi possível validar o CPF. Tente novamente.");
+  if (resposta.status === 409) erro.codigo = "cpf-duplicado";
+  throw erro;
 }
 
 function mostrarConcluido(email) {

@@ -6,7 +6,7 @@
 // IMPORTANTE: firestore.rules repete os IDs, preços e XP mínimos
 // (funções gratis(), precos() e porNivel()). Ao mudar o catálogo aqui,
 // mude lá também, senão a compra é recusada.
-import { escapeHtml, iniciais } from "./util.js";
+import { escapeHtml, iniciais, nomePublico } from "./util.js";
 
 export const MOEDAS_POR_DENUNCIA = 10;
 
@@ -15,8 +15,7 @@ export const PERFIL_PADRAO = {
   itens: [],
   avatar: "iniciais",
   borda: "sem-borda",
-  tema: "escuro",
-  perfilPublico: false
+  tema: "escuro"
 };
 
 export const ICONE_MOEDA = '<svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M14.5 9.5c-.4-.9-1.4-1.5-2.5-1.5-1.5 0-2.5.8-2.5 2s1 1.6 2.5 2 2.5.9 2.5 2-1 2-2.5 2c-1.1 0-2.1-.6-2.5-1.5"/><path d="M12 6.5V8M12 16v1.5"/></svg>';
@@ -89,7 +88,9 @@ function hue(texto) {
  * HTML do avatar com a borda escolhida.
  * `tamanho`: "" (40px), "avatar-sm", "avatar-lg" ou "avatar-xl".
  */
-export function renderAvatar({ nome, avatar, borda } = {}, tamanho = "") {
+export function renderAvatar(perfil = {}, tamanho = "") {
+  const { avatar, borda } = perfil;
+  const nome = nomePublico(perfil);
   const item = obterItem(avatar);
   const comIcone = Boolean(item?.icone);
   const conteudo = comIcone

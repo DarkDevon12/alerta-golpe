@@ -2714,3 +2714,86 @@ body.auth-page {
   .auth-header h1 { font-size: 24px; }
   .auth-form { gap: 16px; }
 }
+
+/* ── LGPD: páginas legais, aceite, modal, rodapé ─────────── */
+
+.site-footer {
+  text-align: center;
+  padding: 24px 16px 40px;
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.site-footer p + p { margin-top: 6px; }
+.site-footer a, .auth-footer-links a { color: var(--muted); text-decoration: underline; }
+.site-footer a:hover, .auth-footer-links a:hover { color: var(--text); }
+.auth-footer-links { margin-top: 6px; }
+
+.legal {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 32px;
+  line-height: 1.65;
+}
+
+.legal h1 { font-family: var(--font-display); font-size: 30px; margin: 8px 0 16px; }
+.legal h2 { font-size: 17px; margin: 28px 0 8px; }
+.legal p, .legal li { color: var(--muted); font-size: 15px; }
+.legal b { color: var(--text); }
+.legal ul { padding-left: 20px; display: grid; gap: 6px; margin-top: 8px; }
+.legal a { color: var(--blue); }
+.legal-rodape { margin-top: 32px; padding-top: 16px; border-top: 1px solid var(--border); }
+
+.aceite-termos {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+  cursor: pointer;
+}
+.aceite-termos[hidden] { display: none; }
+.aceite-termos input { margin-top: 3px; accent-color: var(--green); flex: none; }
+.aceite-termos a { color: var(--blue); text-decoration: underline; }
+
+.aviso-legal {
+  margin-top: 12px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.modal-fundo {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: #000000a6;
+}
+
+.modal {
+  width: 100%;
+  max-width: 460px;
+  display: grid;
+  gap: 12px;
+  padding: 24px;
+}
+
+.modal h2 { font-size: 20px; }
+.modal p { color: var(--muted); font-size: 14px; line-height: 1.55; }
+.modal .form-actions { justify-content: flex-end; margin-top: 4px; }
+
+.btn-perigo {
+  background: var(--red-soft);
+  color: var(--red);
+  border: 1px solid var(--red);
+}
+.btn-perigo:hover:not(:disabled) { background: var(--red); color: #fff; }
+.btn-perigo:disabled { opacity: 0.5; cursor: not-allowed; }
+
+@media (max-width: 640px) {
+  .legal { padding: 22px 18px; }
+}
