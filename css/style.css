@@ -2797,3 +2797,21 @@ body.auth-page {
 @media (max-width: 640px) {
   .legal { padding: 22px 18px; }
 }
+
+/* ── Cupons da loja parceira ── */
+.cupom-intro { color: var(--muted); font-size: 14px; line-height: 1.55; max-width: 70ch; }
+.cupom-intro a { color: var(--green); }
+.loja-item.cupom { padding-top: 28px; }
+.cupom-desc { font-size: 12px; color: var(--muted); line-height: 1.4; }
+.cupom-codigo {
+  padding: 6px 10px;
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  background: var(--bg);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  user-select: all;
+}
+.cupom-acoes { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; }
+.erro-texto { color: var(--red); font-size: 13px; }

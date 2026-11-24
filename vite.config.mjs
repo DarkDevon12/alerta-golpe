@@ -3,12 +3,14 @@ import { resolve } from "path";
 import { processarAnalise } from "./server/analisar.js";
 import { registrarCpf } from "./server/registrar-cpf.js";
 import { excluirConta } from "./server/excluir-conta.js";
+import { gerarCupom } from "./server/cupons.js";
 
 // Rotas de /api atendidas pelo Vite (no deploy, são as funções em api/)
 const ROTAS_API = {
   "/api/analisar": processarAnalise,
   "/api/registrar-cpf": registrarCpf,
-  "/api/excluir-conta": excluirConta
+  "/api/excluir-conta": excluirConta,
+  "/api/gerar-cupom": gerarCupom
 };
 
 // Serve as rotas /api dentro do próprio Vite (dev e preview), para as

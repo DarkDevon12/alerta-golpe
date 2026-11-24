@@ -14,7 +14,7 @@ export const TAMANHO_MAX_NOME = 60;
 
 // Versão do texto dos Termos/Política aceito pela pessoa (mude junto com a
 // data de "Última atualização" das páginas termos.html e privacidade.html)
-export const VERSAO_TERMOS = "2026-11";
+export const VERSAO_TERMOS = "2026-11-24";
 
 const RANKING_NOVO = { apelido: "", anonimo: false, xp: 0, denuncias: 0, moedas: 0, ...PERFIL_PADRAO };
 

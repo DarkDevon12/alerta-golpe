@@ -1,7 +1,8 @@
 // POST /api/excluir-conta — apaga a conta e os dados pessoais do usuário.
 //
 // Apaga: usuarios/{uid}, ranking/{uid}, o registro protegido do CPF e as
-// denúncias privadas (denuncias, onde fica o uid). Os "relatos" públicos
+// denúncias privadas (denuncias, onde fica o uid) e os registros de
+// resgate de cupons; os cupons em si ficam, sem o uid (a loja ainda os honra). Os "relatos" públicos
 // não têm uid nem nome (ver firestore.rules), então já estão anonimizados e
 // permanecem para a prevenção coletiva. Por último remove o login.
 //
@@ -34,6 +35,10 @@ export function excluirConta(req, env) {
     };
 
     await apagar(db.collection("denuncias").where("usuario_uid", "==", uid));
+    await apagar(db.collection("resgates").where("uid", "==", uid));
+    // Cupons não usados continuam valendo na loja, mas sem ligação com a pessoa
+    const cupons = await db.collection("cupons").where("uid", "==", uid).get();
+    for (const d of cupons.docs) await d.ref.update({ uid: null });
     await apagar(db.collection("cpfs").where("uid", "==", uid));
     await db.collection("ranking").doc(uid).delete();
     await db.collection("usuarios").doc(uid).delete();

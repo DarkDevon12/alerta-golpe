@@ -32,6 +32,8 @@ import {
   obterItem,
   aplicarTema
 } from "./personalizacao.js";
+import { CUPONS, LOJA_PARCEIRA, obterCupom } from "./cupons.js";
+import { validarCPF, formatarCPF } from "./cpf.js";
 import { escapeHtml, nivelPorXp, NIVEIS, nomePublico, erroApelido } from "./util.js";
 
 const ICONES = {
@@ -77,6 +79,7 @@ const previaTema = document.getElementById("previa-tema");
 let uid = null;
 let ehMeu = false;
 let perfil = null;
+let cuponsMeus = []; // cupons já pegos (privados, só no perfil próprio)
 let denuncias = null; // só carregadas no perfil próprio (são privadas)
 
 function formatarNumero(n) {
@@ -341,8 +344,146 @@ function renderLoja() {
       </div>
       <a href="denunciar.html" class="btn btn-primary">Ganhar moedas</a>
     </div>
+    ${renderCupons()}
     ${grupos}`;
 }
+
+// ── CUPONS DA LOJA PARCEIRA ─────────────────────────────
+
+async function carregarCupons() {
+  try {
+    const snap = await getDocs(query(collection(db, "cupons"), where("uid", "==", uid)));
+    cuponsMeus = snap.docs.map((d) => d.data()).sort((a, b) => (b.criadoEm?.seconds || 0) - (a.criadoEm?.seconds || 0));
+  } catch (error) {
+    console.warn("Cupons:", error.code);
+    cuponsMeus = [];
+  }
+}
+
+function linkWhatsApp(codigo) {
+  if (!LOJA_PARCEIRA.whatsapp) return "";
+  const texto = `Olá! Quero usar meu cupom ${codigo} do AlertaGolpe.`;
+  return `<a class="btn btn-sm btn-secondary" href="https://wa.me/${LOJA_PARCEIRA.whatsapp}?text=${encodeURIComponent(texto)}" target="_blank" rel="noopener">Enviar no WhatsApp</a>`;
+}
+
+function cartaoCupom(oferta) {
+  const meu = cuponsMeus.find((c) => c.tipo === oferta.id);
+  const titulo = `<strong>${oferta.nome}</strong><span class="cupom-desc">${oferta.descricao}</span>`;
+
+  if (!meu) {
+    const falta = oferta.preco - perfil.moedas;
+    return `
+      <div class="loja-item cupom">
+        <span class="selo-pro">Cupom</span>
+        ${titulo}
+        <button type="button" class="btn btn-sm btn-comprar" data-cupom="${oferta.id}" ${falta > 0 ? `disabled title="Faltam ${falta} moedas"` : ""}>${ICONE_MOEDA}${formatarNumero(oferta.preco)} · Pegar cupom</button>
+      </div>`;
+  }
+
+  const usado = meu.status !== "ativo";
+  return `
+    <div class="loja-item cupom${usado ? "" : " em-uso"}">
+      <span class="selo-pro">${usado ? "Usado" : "Ativo"}</span>
+      ${titulo}
+      <code class="cupom-codigo">${escapeHtml(meu.codigo)}</code>
+      <div class="cupom-acoes">
+        ${usado ? "" : `<button type="button" class="btn btn-sm btn-secondary" data-copiar="${escapeHtml(meu.codigo)}">Copiar código</button>${linkWhatsApp(meu.codigo)}`}
+      </div>
+    </div>`;
+}
+
+function renderCupons() {
+  return `
+    <section class="loja-grupo">
+      <h2>Cupons de desconto — ${LOJA_PARCEIRA.nome}</h2>
+      <p class="cupom-intro">Troque moedas por desconto na loja de impressão 3D <a href="${LOJA_PARCEIRA.site}" target="_blank" rel="noopener">${LOJA_PARCEIRA.nome}</a>. Ao pegar o cupom, geramos um código: mande-o no WhatsApp da loja para usar. Cada CPF pega um cupom de cada tipo, e cada código vale uma única compra.</p>
+      <div class="loja-grade">${CUPONS.map(cartaoCupom).join("")}</div>
+    </section>`;
+}
+
+// Pede o CPF a quem entrou com Google (o servidor guarda só o hash protegido)
+function pedirCpf() {
+  return new Promise((resolve) => {
+    const fundo = document.createElement("div");
+    fundo.className = "modal-fundo";
+    fundo.innerHTML = `
+      <form class="modal card" role="dialog" aria-modal="true" aria-labelledby="modal-cpf-titulo">
+        <h2 id="modal-cpf-titulo">Informe seu CPF</h2>
+        <p>Cada CPF pode pegar um cupom de cada tipo. Não guardamos o número: só uma versão protegida (hash), usada apenas para esse limite.</p>
+        <input type="text" class="input" id="cupom-cpf" inputmode="numeric" maxlength="14" placeholder="000.000.000-00" autocomplete="off" aria-label="CPF">
+        <p class="erro-texto" id="cupom-cpf-erro" role="alert" hidden>CPF inválido.</p>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="cupom-cpf-cancelar">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Continuar</button>
+        </div>
+      </form>`;
+    document.body.appendChild(fundo);
+    const campo = fundo.querySelector("#cupom-cpf");
+    const erro = fundo.querySelector("#cupom-cpf-erro");
+    const fechar = (v) => { fundo.remove(); resolve(v); };
+    campo.focus();
+    campo.addEventListener("input", () => { campo.value = formatarCPF(campo.value); erro.hidden = true; });
+    fundo.querySelector("#cupom-cpf-cancelar").addEventListener("click", () => fechar(null));
+    fundo.querySelector("form").addEventListener("submit", (e) => {
+      e.preventDefault();
+      if (!validarCPF(campo.value)) { erro.hidden = false; return; }
+      fechar(campo.value.replace(/\D/g, ""));
+    });
+  });
+}
+
+async function pedirCupom(oferta, cpf) {
+  const resposta = await fetch("/api/gerar-cupom", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${await auth.currentUser.getIdToken()}` },
+    body: JSON.stringify({ tipo: oferta.id, ...(cpf ? { cpf } : {}) })
+  });
+  const corpo = await resposta.json().catch(() => ({}));
+  if (!resposta.ok) {
+    const erro = new Error(corpo.erro || `Erro ${resposta.status} no servidor.`);
+    erro.codigo = corpo.codigo;
+    throw erro;
+  }
+  return corpo;
+}
+
+abaLoja.addEventListener("click", async (e) => {
+  const copiar = e.target.closest("[data-copiar]");
+  if (copiar) {
+    try {
+      await navigator.clipboard.writeText(copiar.dataset.copiar);
+      copiar.textContent = "Código copiado";
+    } catch { copiar.textContent = "Selecione e copie o código"; }
+    return;
+  }
+
+  const botao = e.target.closest("[data-cupom]");
+  if (!botao) return;
+  const oferta = obterCupom(botao.dataset.cupom);
+  if (!confirm(`Pegar o cupom de ${oferta.nome} por ${formatarNumero(oferta.preco)} moedas?`)) return;
+
+  botao.disabled = true;
+  try {
+    let resultado;
+    try {
+      resultado = await pedirCupom(oferta);
+    } catch (erro) {
+      if (erro.codigo !== "cpf-necessario") throw erro;
+      const cpf = await pedirCpf();
+      if (!cpf) { botao.disabled = false; return; }
+      resultado = await pedirCupom(oferta, cpf);
+    }
+    perfil.moedas = resultado.moedas;
+    await carregarCupons();
+    renderCabecalho();
+    renderLoja();
+    atualizarMenuPerfil(perfil);
+  } catch (erro) {
+    console.error("Erro ao pegar cupom:", erro);
+    alert(erro.message === "Failed to fetch" ? "Servidor indisponível. Tente de novo em instantes." : erro.message);
+    botao.disabled = false;
+  }
+});
 
 async function usarItem(campo, id) {
   await updateDoc(doc(db, "ranking", uid), { [campo]: id });
@@ -580,6 +721,7 @@ async function iniciar() {
     renderCabecalho();
 
     denuncias = ehMeu ? await carregarDenuncias() : null;
+    if (ehMeu) await carregarCupons();
 
     renderGeral();
     if (ehMeu) {

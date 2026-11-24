@@ -63,6 +63,20 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
+    // ── cupons/{codigo}: cupons de desconto da loja parceira ───────
+    // Criados e baixados só pelo servidor (/api/gerar-cupom e scripts/cupom.mjs).
+    // A pessoa só lê os próprios (consulta where uid == o seu).
+    match /cupons/{codigo} {
+      allow read: if logado() && resource.data.uid == request.auth.uid;
+      allow write: if false;
+    }
+
+    // ── resgates/{hmac_tipo}: limite de um cupom de cada tipo por CPF ─
+    // Só o servidor acessa; a chave usa o HMAC do CPF, nunca o CPF.
+    match /resgates/{id} {
+      allow read, write: if false;
+    }
+
     // ── ranking/{uid}: perfil público, ranking e loja ──────────────
     // Campos: apelido, anonimo, xp, denuncias, moedas, itens (comprados),
     // avatar, borda, tema, ultimaDenuncia, ultimaCompra. Nunca nome real,
