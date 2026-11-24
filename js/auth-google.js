@@ -48,7 +48,7 @@ async function fazerLoginGoogle() {
         return;
       }
       await criarPerfil(user.uid, {
-        nome: user.displayName || "Usuário",
+        nome: (user.displayName || "").trim().length >= 2 ? user.displayName.trim() : "Usuário",
         email: user.email,
         loginGoogle: true
       });
@@ -70,7 +70,7 @@ async function fazerLoginGoogle() {
     } else if (error.code === "auth/unauthorized-domain") {
       alert(
         "Domínio não autorizado.\n\n" +
-        "Firebase Console → Authentication → Settings → Authorized domains → adicione localhost"
+        "Firebase Console → Authentication → Settings → Authorized domains → adicione " + window.location.hostname
       );
     } else if (error.code === "auth/operation-not-supported-in-this-environment") {
       alert("Use HTTPS ou http://localhost para testes");
